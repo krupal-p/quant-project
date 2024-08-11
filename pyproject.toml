@@ -9,8 +9,8 @@ dependencies = [
     "psycopg[binary]",
     "pydantic",
     "pydantic-settings",
-    "yfinance",
     "streamlit",
+    "yfinance",
 ]
 
 
