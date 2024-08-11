@@ -1,2 +1,2 @@
-from ._config import settings
+from ._config import config
 from ._logger import log

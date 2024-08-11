@@ -2,7 +2,7 @@ import logging
 import logging.config
 from pathlib import Path
 
-from qp import settings
+from qp import config
 
 
 class Logger:
@@ -28,7 +28,7 @@ class Logger:
                 },
             },
             "root": {
-                "level": settings.LOG_LEVEL,
+                "level": config.LOG_LEVEL,
                 "handlers": ["console", "info_file_handler"],
             },
         }
