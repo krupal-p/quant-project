@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Streamlit app",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "cwd": "${workspaceFolder}/src",
+            "args": [
+                "run",
+                "qp/ui/streamlit_app.py"
+            ],
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
