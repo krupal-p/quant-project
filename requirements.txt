@@ -77,6 +77,10 @@ platformdirs==4.2.2
     # via yfinance
 protobuf==5.27.3
     # via streamlit
+psycopg==3.2.1
+    # via quant-project (pyproject.toml)
+psycopg-binary==3.2.1
+    # via psycopg
 pyarrow==17.0.0
     # via
     #   quant-project (pyproject.toml)
@@ -137,6 +141,7 @@ tornado==6.4.1
     # via streamlit
 typing-extensions==4.12.2
     # via
+    #   psycopg
     #   pydantic
     #   pydantic-core
     #   sqlalchemy

@@ -6,6 +6,7 @@ dependencies = [
     "numpy",
     "pyarrow",
     "SQLAlchemy",
+    "psycopg[binary]",
     "pydantic",
     "pydantic-settings",
     "yfinance",
