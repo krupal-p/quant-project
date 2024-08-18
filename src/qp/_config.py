@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     LOG_LEVEL: str
-    POSTGRES_URL: str
+    SQLSERVER_URL: str
 
 
 config = Settings(

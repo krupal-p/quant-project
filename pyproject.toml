@@ -6,7 +6,7 @@ dependencies = [
     "numpy",
     "pyarrow",
     "SQLAlchemy",
-    "psycopg[binary]",
+    "pyodbc",
     "pydantic",
     "pydantic-settings",
     "streamlit",

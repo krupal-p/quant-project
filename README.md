@@ -8,13 +8,23 @@ uv pip install -e '.[dev]'
 
 uv pip install -e .
 
-uv pip compile -p 3.11 pyproject.toml -o requirements.txt
+uv pip compile -p 3.12 pyproject.toml -o requirements.txt
+
+uv pip sync requirements.txt && uv pip install -e '.[dev]'
+
+### Upgrade all packages
+
+uv pip compile -p 3.12 pyproject.toml -o requirements.txt --upgrade
+
+### Upgrade a specific package
+
+uv pip compile -p 3.12 pyproject.toml -o requirements.txt --upgrade-package pandas
 
 ## Run Streamlit
 
 cd src/qp/ui && streamlit run streamlit_app.py
 
-## Run Postgres
+## Run SQL Server in Docker
 
 docker compose up -d
 
