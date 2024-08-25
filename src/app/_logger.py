@@ -2,7 +2,7 @@ import logging
 import logging.config
 from pathlib import Path
 
-from qp import config
+from app import config
 
 
 class Logger:

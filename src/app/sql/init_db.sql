@@ -36,6 +36,7 @@ CREATE TABLE dim_sec_master
     uuid UNIQUEIDENTIFIER,
     longBusinessSummary TEXT
 );
+
 CREATE TABLE dim_item_master
 (
     item_id smallint PRIMARY KEY,
