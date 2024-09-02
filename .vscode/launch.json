@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "streamlit",
-            "cwd": "${workspaceFolder}/src/qp/ui",
+            "cwd": "${workspaceFolder}/src/app/ui",
             "args": [
                 "run",
                 "streamlit_app.py"

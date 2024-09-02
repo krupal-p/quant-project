@@ -22,7 +22,7 @@ uv pip compile -p 3.12 pyproject.toml -o requirements.txt --upgrade-package pand
 
 ## Run Streamlit
 
-cd src/qp/ui && streamlit run streamlit_app.py
+cd src/app/ui && streamlit run streamlit_app.py
 
 ## Run SQL Server in Docker
 

@@ -46,11 +46,4 @@ class Logger:
         return logging.getLogger(logger_name)
 
 
-log: logging.Logger = Logger(Path(__file__).parent).get_logger("qp")
-
-if __name__ == "__main__":
-    log.debug("Hello World")
-    log.info("Hello World")
-    log.warning("Hello World")
-    log.error("Hello World")
-    log.critical("Hello World")
+log: logging.Logger = Logger(Path(__file__).parent).get_logger("app")
