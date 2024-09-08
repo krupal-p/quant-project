@@ -5,3 +5,7 @@ gatherUsageStats = false
 
 [server]
 runOnSave = true
+
+
+[runner]
+magicEnabled = false
