@@ -1,5 +1,10 @@
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 
 from app import config
 
-sqlserver_conn = create_engine(config.SQLSERVER_URL)
+
+def get_db_conn(url: str) -> Engine:
+    return create_engine(url)
+
+
+sqlserver_conn: Engine = get_db_conn(config.SQLSERVER_URL)
