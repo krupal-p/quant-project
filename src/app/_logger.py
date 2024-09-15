@@ -2,48 +2,51 @@ import logging
 import logging.config
 from pathlib import Path
 
+from concurrent_log_handler import ConcurrentRotatingFileHandler
+
 from app import config
 
 
-class Logger:
-    def __init__(self, log_dir) -> None:
-        self.log_config = {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "simple": {
-                    "format": "[%(asctime)s] [%(levelname)s] [%(name)s] [%(module)s] %(message)s",
-                },
+def get_logger(log_dir: Path = config.LOG_DIR, logger_name: str = "app"):
+    log_config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "simple": {
+                "format": "[%(asctime)s] [%(levelname)s] [%(name)s] [%(module)s] %(message)s",
             },
-            "handlers": {
-                "console": {
-                    "class": "logging.StreamHandler",
-                    "formatter": "simple",
-                    "stream": "ext://sys.stdout",
-                },
-                "info_file_handler": {
-                    "class": "logging.FileHandler",
-                    "formatter": "simple",
-                    "encoding": "utf8",
-                },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "simple",
+                "stream": "ext://sys.stdout",
             },
-            "root": {
-                "level": config.LOG_LEVEL,
-                "handlers": ["console", "info_file_handler"],
+            "info_file_handler": {
+                "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
+                "formatter": "simple",
+                "encoding": "utf8",
+                "backupCount": 5,
+                "maxBytes": 1000000,
             },
-        }
-        self.log_dir = log_dir / "logs"
+        },
+        "root": {
+            "level": config.LOG_LEVEL,
+            "handlers": ["console", "info_file_handler"],
+        },
+    }
 
-        if not self.log_dir.exists():
-            self.log_dir.mkdir()
+    log_dir = log_dir / "logs"
 
-    def get_logger(self, logger_name: str) -> logging.Logger:
-        self.log_config["handlers"]["info_file_handler"]["filename"] = str(
-            self.log_dir / f"{logger_name}.log",
-        )
-        logging.config.dictConfig(self.log_config)
+    if not log_dir.exists():
+        log_dir.mkdir()
 
-        return logging.getLogger(logger_name)
+    log_config["handlers"]["info_file_handler"]["filename"] = str(
+        log_dir / f"{logger_name}.log",
+    )
+    logging.config.dictConfig(log_config)
+
+    return logging.getLogger(logger_name)
 
 
-log: logging.Logger = Logger(Path(__file__).parent).get_logger("app")
+log = get_logger()
