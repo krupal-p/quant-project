@@ -1,5 +1,5 @@
-from app import config
+from app import get_config()
 
 
 def test_config():
-    assert config
+    assert get_config()
