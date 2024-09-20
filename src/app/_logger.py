@@ -1,52 +1,64 @@
 import logging
 import logging.config
-from pathlib import Path
+import threading
 
 from concurrent_log_handler import ConcurrentRotatingFileHandler
 
 from app import config
 
 
-def get_logger(log_dir: Path = config.LOG_DIR, logger_name: str = "app"):
-    log_config = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "simple": {
-                "format": "[%(asctime)s] [%(levelname)s] [%(name)s] [%(module)s] %(message)s",
-            },
-        },
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "simple",
-                "stream": "ext://sys.stdout",
-            },
-            "info_file_handler": {
-                "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
-                "formatter": "simple",
-                "encoding": "utf8",
-                "backupCount": 5,
-                "maxBytes": 1000000,
-            },
-        },
-        "root": {
-            "level": config.LOG_LEVEL,
-            "handlers": ["console", "info_file_handler"],
-        },
-    }
+class Logger:
+    _instance = None
+    _lock = threading.Lock()
 
-    log_dir = log_dir / "logs"
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                cls._instance = super().__new__(cls)
+                cls.log_config = {
+                    "version": 1,
+                    "disable_existing_loggers": False,
+                    "formatters": {
+                        "simple": {
+                            "format": "[%(asctime)s] [%(levelname)s] [%(process)d] [%(module)s] %(message)s",
+                        },
+                    },
+                    "handlers": {
+                        "console": {
+                            "class": "logging.StreamHandler",
+                            "formatter": "simple",
+                            "stream": "ext://sys.stdout",
+                        },
+                        "info_file_handler": {
+                            "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
+                            "formatter": "simple",
+                            "encoding": "utf8",
+                            "backupCount": 5,
+                            "maxBytes": 1e6 * 10,
+                        },
+                    },
+                    "root": {
+                        "level": config.LOG_LEVEL,
+                        "handlers": ["console", "info_file_handler"],
+                    },
+                }
 
-    if not log_dir.exists():
-        log_dir.mkdir()
+                log_dir = config.LOG_DIR / "logs"
 
-    log_config["handlers"]["info_file_handler"]["filename"] = str(
-        log_dir / f"{logger_name}.log",
-    )
-    logging.config.dictConfig(log_config)
+                if not log_dir.exists():
+                    log_dir.mkdir()
 
-    return logging.getLogger(logger_name)
+                cls.log_config["handlers"]["info_file_handler"]["filename"] = str(
+                    log_dir / "app.log",
+                )
+                logging.config.dictConfig(cls.log_config)
+
+                cls.log = logging.getLogger("app")
+        return cls._instance
 
 
-log = get_logger()
+def get_logger():
+    return Logger().log
+
+
+log: logging.Logger = get_logger()
