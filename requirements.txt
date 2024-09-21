@@ -26,7 +26,7 @@ click==8.1.7
     #   streamlit
 concurrent-log-handler==0.9.25
     # via quant-project (pyproject.toml)
-filelock==3.16.0
+filelock==3.16.1
     # via ray
 frozendict==2.4.4
     # via yfinance
@@ -38,11 +38,11 @@ gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
     # via streamlit
-greenlet==3.1.0
+greenlet==3.1.1
     # via sqlalchemy
 html5lib==1.1
     # via yfinance
-idna==3.9
+idna==3.10
     # via requests
 jinja2==3.1.4
     # via
@@ -66,7 +66,7 @@ msgpack==1.1.0
     # via ray
 multitasking==0.0.11
     # via yfinance
-narwhals==1.8.0
+narwhals==1.8.2
     # via altair
 numpy==2.1.1
     # via
@@ -81,7 +81,7 @@ packaging==24.1
     #   altair
     #   ray
     #   streamlit
-pandas==2.2.2
+pandas==2.2.3
     # via
     #   quant-project (pyproject.toml)
     #   streamlit
@@ -90,13 +90,13 @@ peewee==3.17.6
     # via yfinance
 pillow==10.4.0
     # via streamlit
-platformdirs==4.3.3
+platformdirs==4.3.6
     # via yfinance
 polars==1.7.1
     # via quant-project (pyproject.toml)
 portalocker==2.10.1
     # via concurrent-log-handler
-protobuf==5.28.1
+protobuf==5.28.2
     # via
     #   ray
     #   streamlit
@@ -104,11 +104,11 @@ pyarrow==17.0.0
     # via
     #   quant-project (pyproject.toml)
     #   streamlit
-pydantic==2.9.1
+pydantic==2.9.2
     # via
     #   quant-project (pyproject.toml)
     #   pydantic-settings
-pydantic-core==2.23.3
+pydantic-core==2.23.4
     # via pydantic
 pydantic-settings==2.5.2
     # via quant-project (pyproject.toml)
@@ -128,7 +128,7 @@ pytz==2024.2
     #   yfinance
 pyyaml==6.0.2
     # via ray
-ray==2.35.0
+ray==2.36.0
     # via quant-project (pyproject.toml)
 referencing==0.35.1
     # via
@@ -153,7 +153,7 @@ smmap==5.0.1
     # via gitdb
 soupsieve==2.6
     # via beautifulsoup4
-sqlalchemy==2.0.34
+sqlalchemy==2.0.35
     # via quant-project (pyproject.toml)
 streamlit==1.38.0
     # via quant-project (pyproject.toml)

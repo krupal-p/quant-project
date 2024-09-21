@@ -17,7 +17,7 @@ class Config:
                     _env_file=Path(__file__).parent / ".env",  # type: ignore
                     _env_file_encoding="utf-8",  # type: ignore
                 )
-                print("New instance created")
+                print("New Config instance created")
         return cls._instance
 
 
@@ -27,11 +27,7 @@ class Settings(BaseSettings):
     LOG_DIR: DirectoryPath = Path(__file__).parent
 
 
-def get_config() -> Settings:
-    return Config().config
-
-
-config = get_config()
+config = Config().config
 
 if __name__ == "__main__":
-    print(get_config())
+    print(config)

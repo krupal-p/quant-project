@@ -57,8 +57,4 @@ class Logger:
         return cls._instance
 
 
-def get_logger():
-    return Logger().log
-
-
-log: logging.Logger = get_logger()
+log: logging.Logger = Logger().log

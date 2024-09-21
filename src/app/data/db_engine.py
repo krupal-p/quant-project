@@ -4,7 +4,7 @@ import pandas as pd
 import polars as pl
 from sqlalchemy import Engine, create_engine
 
-from app import get_config, get_logger
+from app import config, log
 
 
 class DBEngine:
@@ -15,9 +15,8 @@ class DBEngine:
         if cls._instance is None:
             with cls._lock:
                 cls._instance = super().__new__(cls)
-                cls.log = get_logger()
-                cls.log.info("Creating DBEngine instance")
-                cls.conn: Engine = create_engine(get_config().SQLSERVER_URL)
+                log.info("Creating DBEngine instance")
+                cls.conn: Engine = create_engine(config.SQLSERVER_URL)
         return cls._instance
 
 
