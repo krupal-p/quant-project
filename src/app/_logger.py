@@ -17,7 +17,7 @@ class Logger:
                 cls._instance = super().__new__(cls)
                 cls.log_config = {
                     "version": 1,
-                    "disable_existing_loggers": True,
+                    "disable_existing_loggers": False,
                     "formatters": {
                         "simple": {
                             "format": "[%(asctime)s] [%(levelname)s] [%(process)d] [%(module)s] %(message)s",
