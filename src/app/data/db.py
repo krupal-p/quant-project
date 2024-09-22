@@ -2,7 +2,7 @@ import threading
 
 import pandas as pd
 import polars as pl
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, text
 
 from app import config, log
 
@@ -30,3 +30,16 @@ def read_sql(query: str) -> pd.DataFrame:
 
 def read_sql_polar(query: str) -> pl.DataFrame:
     return pl.read_database(query, get_db_conn())
+
+
+def insert_into_table(
+    insert_statement: str,
+    data,
+    table_name_with_schema: str,
+    *,
+    truncate: bool,
+) -> None:
+    with get_db_conn().begin() as conn:
+        if truncate:
+            conn.execute(text(f"TRUNCATE TABLE {table_name_with_schema}"))
+        conn.execute(text(insert_statement), data)
