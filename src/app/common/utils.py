@@ -29,5 +29,4 @@ def to_snake_case(s):
     # Remove special characters
     s = re.sub(r"[^\w\s]", "", s)
     # Convert to lowercase
-    s = s.lower()
-    return s
+    return s.lower()
