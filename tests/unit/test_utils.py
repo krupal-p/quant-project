@@ -1,4 +1,3 @@
-import pytest
 from app.common.utils import to_snake_case
 
 
