@@ -66,7 +66,7 @@ msgpack==1.1.0
     # via ray
 multitasking==0.0.11
     # via yfinance
-narwhals==1.8.2
+narwhals==1.9.1
     # via altair
 numpy==2.1.1
     # via
@@ -92,7 +92,7 @@ pillow==10.4.0
     # via streamlit
 platformdirs==4.3.6
     # via yfinance
-polars==1.7.1
+polars==1.9.0
     # via quant-project (pyproject.toml)
 portalocker==2.10.1
     # via concurrent-log-handler
@@ -128,7 +128,7 @@ pytz==2024.2
     #   yfinance
 pyyaml==6.0.2
     # via ray
-ray==2.36.0
+ray==2.37.0
     # via quant-project (pyproject.toml)
 referencing==0.35.1
     # via
@@ -139,7 +139,7 @@ requests==2.32.3
     #   ray
     #   streamlit
     #   yfinance
-rich==13.8.1
+rich==13.9.2
     # via streamlit
 rpds-py==0.20.0
     # via
@@ -155,9 +155,9 @@ soupsieve==2.6
     # via beautifulsoup4
 sqlalchemy==2.0.35
     # via quant-project (pyproject.toml)
-streamlit==1.38.0
+streamlit==1.39.0
     # via quant-project (pyproject.toml)
-tenacity==8.5.0
+tenacity==9.0.0
     # via streamlit
 toml==0.10.2
     # via streamlit
@@ -170,11 +170,11 @@ typing-extensions==4.12.2
     #   pydantic-core
     #   sqlalchemy
     #   streamlit
-tzdata==2024.1
+tzdata==2024.2
     # via pandas
 urllib3==2.2.3
     # via requests
 webencodings==0.5.1
     # via html5lib
-yfinance==0.2.43
+yfinance==0.2.44
     # via quant-project (pyproject.toml)
