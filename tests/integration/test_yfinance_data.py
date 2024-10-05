@@ -1,5 +1,9 @@
-from app.data.yfinance_data import get_sp500_constituents
-from app.models.models import SP500Constituent
+from typing import TYPE_CHECKING
+
+from app.mkt_data.market_data import get_sp500_constituents
+
+if TYPE_CHECKING:
+    from app.mkt_data.models import SP500Constituent
 
 
 def test_get_sp500_constituents():

@@ -1,5 +1,5 @@
 from app import log
-from app.service.update_index_constituents import SP500IndexConstituentsUpdater
+from app.mkt_data.update_index_constituents import SP500IndexConstituentsUpdater
 
 
 def main():
