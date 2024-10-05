@@ -2,9 +2,8 @@ import threading
 
 import pandas as pd
 import polars as pl
-from sqlalchemy import Engine, create_engine, text
-
 from app import config, log
+from sqlalchemy import Engine, create_engine, text
 
 
 class DBEngine:

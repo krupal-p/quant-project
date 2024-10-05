@@ -1,6 +1,6 @@
-from app.data.db import get_db_conn, insert_into_table
-from app.data.market_data import get_sp500_constituents
-from app.service.utils import execute_sql_statement_from_file
+from app.common.db import get_db_conn, insert_into_table
+from app.common.utils import execute_sql_statement_from_file
+from app.mkt_data.market_data import get_sp500_constituents
 
 
 class SP500IndexConstituentsUpdater:
