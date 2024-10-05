@@ -19,7 +19,7 @@ def get_sp500_constituents() -> list[SP500Constituent]:
 
     tickers.columns = [
         "symbol",
-        "security",
+        "security_name",
         "gics_sector",
         "gics_sub_industry",
         "headquarters_location",

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class SP500Constituent(BaseModel):
     index_name: str = "sp500"
     symbol: str
-    security_name: str = Field(alias="security")
+    security_name: str
     gics_sector: str
     gics_sub_industry: str
     date_added: date
@@ -15,14 +15,14 @@ class SP500Constituent(BaseModel):
 
 class Security(BaseModel):
     symbol: str
-    underlyingSymbol: str
+    underlying_symbol: str
     isin: str
-    shortName: str
-    longName: str
-    quoteType: str
+    short_name: str
+    long_name: str
+    quote_type: str
     currency: str
     exchange: str
-    industryKey: str
-    sectorKey: str
+    industry_key: str
+    sector_key: str
     uuid: UUID
-    longBusinessSummary: str
+    long_business_summary: str
