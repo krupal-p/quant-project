@@ -28,7 +28,4 @@ def get_sp500_constituents() -> list[SP500Constituent]:
         "founded",
     ]
 
-    return [
-        SP500Constituent(**{str(k): v for k, v in ticker.items()})
-        for ticker in tickers.to_dict(orient="records")
-    ]
+    return [SP500Constituent(**ticker) for ticker in tickers.to_dict(orient="records")]  # type: ignore
