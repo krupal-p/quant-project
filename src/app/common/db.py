@@ -7,8 +7,6 @@ import polars as pl
 from app import config, log
 from sqlalchemy import Engine, MetaData, Table, create_engine, text
 
-metadata_obj = MetaData()
-
 
 class DBEngine:
     _instance = None
@@ -20,6 +18,7 @@ class DBEngine:
                 cls._instance = super().__new__(cls)
                 log.info("Creating DBEngine instance")
                 cls.conn: Engine = create_engine(config.SQLSERVER_URL)
+                cls.metadata = MetaData()
         return cls._instance
 
 
@@ -44,7 +43,7 @@ def insert_into_table(
 ):
     table = Table(
         table_name,
-        metadata_obj,
+        DBEngine().metadata,
         schema=schema,
         autoload_with=get_db_conn(),
     )
