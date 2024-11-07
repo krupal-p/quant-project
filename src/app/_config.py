@@ -1,32 +1,80 @@
+from __future__ import annotations
+
 import threading
 from pathlib import Path
+from typing import Optional
 
-from pydantic import DirectoryPath
+from pydantic import DirectoryPath, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
-class Config:
-    _instance = None
-    _lock = threading.Lock()
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables and .env file"""
 
-    def __new__(cls):
+    LOG_LEVEL: str = Field(
+        ...,
+        description="Logging level (DEBUG, INFO, WARNING, ERROR)",
+    )
+    SQLSERVER_URL: str = Field(..., description="SQL Server connection URL")
+    LOG_DIR: DirectoryPath = Field(
+        default=Path(__file__).parent,
+        description="Directory for log files",
+    )
+
+    @field_validator("LOG_LEVEL")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Validate that LOG_LEVEL is a valid logging level"""
+        valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        if v.upper() not in valid_levels:
+            msg = f"LOG_LEVEL must be one of {valid_levels}"
+            raise ValueError(msg)
+        return v.upper()
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        frozen = True  # Make settings immutable
+
+
+class Config:
+    """Thread-safe singleton configuration manager"""
+
+    _instance: Config | None = None
+    _lock: threading.Lock = threading.Lock()
+    _initialized: bool = False
+    settings: Settings
+
+    def __new__(cls) -> Config:
         if cls._instance is None:
             with cls._lock:
-                cls._instance = super().__new__(cls)
-                cls.config = Settings(
-                    _env_file=Path(__file__).parent / ".env",  # type: ignore
-                    _env_file_encoding="utf-8",  # type: ignore
-                )
-                print("New Config instance created")
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
+    def __init__(self) -> None:
+        if not self._initialized:
+            with self._lock:
+                if not self._initialized:
+                    self._load_settings()
+                    self._initialized = True
 
-class Settings(BaseSettings):
-    LOG_LEVEL: str
-    SQLSERVER_URL: str
-    LOG_DIR: DirectoryPath = Path(__file__).parent
+    def _load_settings(self) -> None:
+        """Load settings from environment variables and .env file"""
+        try:
+            env_file = Path(__file__).parent / ".env"
+            self.settings = Settings(_env_file=env_file)  # type: ignore
+        except Exception as e:
+            msg = f"Failed to load configuration: {e!s}"
+            raise RuntimeError(msg) from e
+
+    @property
+    def config(self) -> Settings:
+        """Get the application settings"""
+        return self.settings
 
 
+# Global configuration instance
 config = Config().config
 
 if __name__ == "__main__":
