@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import threading
 from pathlib import Path
 from typing import Optional
@@ -40,12 +38,12 @@ class Settings(BaseSettings):
 class Config:
     """Thread-safe singleton configuration manager"""
 
-    _instance: Config | None = None
+    _instance: Optional["Config"] = None
     _lock: threading.Lock = threading.Lock()
     _initialized: bool = False
     settings: Settings
 
-    def __new__(cls) -> Config:
+    def __new__(cls) -> "Config":
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
