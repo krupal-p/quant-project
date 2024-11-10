@@ -24,3 +24,9 @@ dev = ["pytest", "pytest-cov", "watchdog", "ipykernel"]
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+app = ["**/*", ".*"]
