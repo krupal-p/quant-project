@@ -23,3 +23,5 @@ def test_to_snake_case():
         to_snake_case("string_with_special_characters!@#$%^&*()")
         == "string_with_special_characters"
     )
+
+    assert to_snake_case("ex-date") == "ex_date"
