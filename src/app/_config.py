@@ -2,7 +2,7 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from pydantic import DirectoryPath, Field, field_validator
+from pydantic import ConfigDict, DirectoryPath, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -29,10 +29,11 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         return v.upper()
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        frozen = True  # Make settings immutable
+    model_config = ConfigDict(
+        env_file=Path(__file__).parent / ".env",
+        env_file_encoding="utf-8",
+        frozen=True,
+    )  # type: ignore
 
 
 class Config:
