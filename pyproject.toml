@@ -13,7 +13,7 @@ dependencies = [
     "yfinance",
     "polars>=1.6.0",
     "concurrent-log-handler",
-    "ray",
+    "dlt",
 ]
 
 
