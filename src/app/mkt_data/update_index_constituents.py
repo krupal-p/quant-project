@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
 from app.common.db import (
-    execute_sql_statement_from_file,
-    get_db_conn,
+    execute_sql_statement,
+    generate_merge_statement,
     insert_into_table,
 )
 from app.mkt_data.market_data import get_sp500_constituents
@@ -19,7 +19,14 @@ class SP500IndexConstituentsUpdater:
         # Update the dim_index_tracker table with any new S&P 500 constituents
         insert_into_table(constituents, "dim_index_tracker", "stg", truncate=True)
 
-        execute_sql_statement_from_file("merge_sp500_constituents")
+        execute_sql_statement(
+            generate_merge_statement(
+                "dim_index_tracker",
+                "stg",
+                "dim_index_tracker",
+                "dbo",
+            ),
+        )
 
     def main(self):
         self.save_constituents(
