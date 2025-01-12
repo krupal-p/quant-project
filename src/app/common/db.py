@@ -63,3 +63,51 @@ def execute_sql_statement_from_file(file_name: str) -> None:
         sql_statement = file.read()
         with get_db_conn().begin() as conn:
             conn.execute(text(sql_statement))
+
+
+def execute_sql_statement(sql_statement: str) -> None:
+    with get_db_conn().begin() as conn:
+        conn.execute(text(sql_statement))
+
+
+def get_table(table_name: str, schema: str) -> Table:
+    return Table(
+        table_name,
+        DBEngine().metadata,
+        schema=schema,
+        autoload_with=get_db_conn(),
+    )
+
+
+def generate_merge_statement(
+    src_table_name: str,
+    src_schema: str,
+    tgt_table_name: str,
+    tgt_schema: str,
+) -> str:
+    tgt_table = get_table(tgt_table_name, tgt_schema)
+
+    columns = [col.name for col in tgt_table.columns]
+    primary_keys = [col.name for col in tgt_table.primary_key.columns]
+
+    if not primary_keys:
+        msg = f"Table {tgt_schema}.{tgt_table_name} does not have a primary key."
+        raise ValueError(
+            msg,
+        )
+
+    source_alias = "src"
+    target_alias = "tgt"
+
+    merge_statement = f"MERGE INTO {tgt_schema}.{tgt_table_name} AS {target_alias}\n"
+    merge_statement += f"USING (SELECT {', '.join(columns)} FROM {src_schema}.{src_table_name}) AS {source_alias} ({', '.join(columns)})\n"
+    merge_statement += f"ON {' AND '.join([f'{target_alias}.{pk} = {source_alias}.{pk}' for pk in primary_keys])}\n"
+    merge_statement += "WHEN MATCHED THEN\n"
+    merge_statement += f"UPDATE SET {', '.join([f'{col} = {source_alias}.{col}' for col in columns if col not in primary_keys])}\n"
+    merge_statement += "WHEN NOT MATCHED THEN\n"
+    merge_statement += f"INSERT ({', '.join(columns)})\n"
+    merge_statement += (
+        f"VALUES ({', '.join([f'{source_alias}.{col}' for col in columns])});"
+    )
+
+    return merge_statement

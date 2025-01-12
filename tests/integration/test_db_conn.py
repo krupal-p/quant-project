@@ -1,4 +1,4 @@
-from app.common.db import get_db_conn, read_sql, read_sql_polar
+from app.common.db import get_db_conn, get_table, read_sql, read_sql_polar
 from sqlalchemy import text
 
 
@@ -18,3 +18,13 @@ def test_read_sql():
 def test_read_sql_polar():
     df = read_sql_polar("SELECT 1")
     assert df.shape == (1, 1)
+
+
+def test_get_table():
+    table = get_table("dim_item_master", schema="dbo")
+    assert table.name == "dim_item_master"
+    assert len(table.columns) == 3
+    assert "item_id" in table.columns
+    assert "item_name" in table.columns
+    assert "item_desc" in table.columns
+    assert table.primary_key.columns.keys() == ["item_id"]
