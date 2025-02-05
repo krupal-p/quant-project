@@ -1,15 +1,40 @@
+import json
+from pathlib import Path
+
 import pandas as pd
 import yfinance as yf
-from app.mkt_data.models import SP500Constituent
-
-# data = yf.Ticker("MSFT").history(period="1y")
-# print(data.head())
-# df = yf.download("MSFT", start="2022-01-01", end="2024-05-29")
+from app.mkt_data.models import Security, SP500Constituent
 
 
-# fiflter data for date > 2022-01-01
-# df = data[data.index > "2022-01-01"]
-# print(df.head())
+def get_yfinance_price_data(
+    tickers: list[str],
+    start_date: str,
+    end_date: str | None = None,
+) -> dict[str, pd.DataFrame]:
+    data = yf.download(tickers, start=start_date, end=end_date)
+
+    # Convert to dictionary
+    return {
+        ticker: data.xs(ticker, axis=1, level="Ticker")
+        for ticker in data.columns.get_level_values(1).unique()
+    }
+
+
+def get_yfinance_security_data(symbol: str):
+    ticker_data = yf.Ticker(symbol)
+    symbol_data = yf.Ticker(symbol).info
+    isin = ticker_data.isin
+
+    if isin is None or isin == "-":
+        isin = ""
+    return Security(**symbol_data, isin=isin)
+
+
+def get_ticker_list() -> list[str]:
+    file_path = Path(__file__).parent / "yfinance_symbols.json"
+    # read the file contents and convert the json to a list of str
+    with file_path.open() as file:
+        return json.load(file)
 
 
 def get_sp500_constituents() -> list[SP500Constituent]:
