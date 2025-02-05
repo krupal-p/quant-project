@@ -236,4 +236,10 @@ pyrightconfig.json
 .history
 .ionide
 
+# DLT files
+secrets.toml
+
+# Data files
+data/
+
 # End of https://www.toptal.com/developers/gitignore/api/macos,python,visualstudiocode,jupyternotebooks
