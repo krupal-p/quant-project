@@ -5,17 +5,12 @@ dependencies = [
     "pandas",
     "numpy",
     "pyarrow",
-    "SQLAlchemy",
-    "pyodbc",
     "pydantic",
     "pydantic-settings",
     "streamlit",
     "yfinance",
-    "polars>=1.6.0",
+    "polars",
     "concurrent-log-handler",
-    "dlt",
-    "dlt[sqlalchemy]",
-    "dlt[mssql]",
 ]
 
 
