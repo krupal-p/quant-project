@@ -11,6 +11,7 @@ dependencies = [
     "yfinance",
     "polars",
     "concurrent-log-handler",
+    "lxml",
 ]
 
 
