@@ -16,7 +16,6 @@ class SP500Constituent(BaseModel):
 
 class Security(BaseModel):
     symbol: str
-    underlying_symbol: str = Field(alias="underlyingSymbol")
     isin: str
     short_name: str = Field(alias="shortName")
     long_name: str = Field(alias="longName")
@@ -25,7 +24,6 @@ class Security(BaseModel):
     exchange: str
     industry_key: str = Field(alias="industryKey")
     sector_key: str = Field(alias="sectorKey")
-    uuid: UUID
     long_business_summary: str = Field(alias="longBusinessSummary")
 
 
