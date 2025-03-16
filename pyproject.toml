@@ -12,6 +12,7 @@ dependencies = [
     "polars",
     "concurrent-log-handler",
     "lxml",
+    "scipy",
 ]
 
 
