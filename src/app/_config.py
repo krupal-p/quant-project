@@ -61,8 +61,7 @@ class Config:
     def _load_settings(self) -> None:
         """Load settings from environment variables and .env file"""
         try:
-            env_file = Path(__file__).parent / ".env"
-            self.settings = Settings(_env_file=env_file)  # type: ignore
+            self.settings = Settings()  # type: ignore
         except Exception as e:
             msg = f"Failed to load configuration: {e!s}"
             raise RuntimeError(msg) from e
