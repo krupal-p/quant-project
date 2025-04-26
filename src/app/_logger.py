@@ -1,59 +1,67 @@
 import logging
 import logging.config
 import threading
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from concurrent_log_handler import ConcurrentRotatingFileHandler
+from concurrent_log_handler import ConcurrentRotatingFileHandler  # type: ignore
 
 from app import config
 
 
-@dataclass
-class LogConfig:
-    """Configuration settings for logging"""
-
-    max_bytes: int = int(1e6 * 10)  # 10MB
-    backup_count: int = 5
-    encoding: str = "utf8"
-    log_format: str = (
-        "[%(asctime)s] [%(levelname)s] [%(process)d] [%(module)s] %(message)s"
-    )
-
-
 class Logger:
-    """Thread-safe singleton logger implementation"""
+    """
+    Logger is a thread-safe singleton class responsible for configuring and managing the application's logging setup.
 
-    _instance: Optional["Logger"] = None
-    _lock: threading.Lock = threading.Lock()
-    _initialized: bool = False
+    This class ensures that only one instance of the logger is created and shared across the application. It uses a lock
+    to synchronize threads during the first instantiation and prevents reinitialization of the logger configuration.
 
-    def __new__(cls) -> "Logger":
+    Methods:
+        __new__(cls):
+            Ensures that only one instance of the Logger class is created (singleton pattern).
+        __init__():
+            Initializes the logger configuration if it hasn't been initialized already.
+        _setup_logging_config():
+            Configures the logging settings, including formatters, handlers, and log file rotation.
+
+    Attributes:
+        _instance (Logger or None):
+            Holds the singleton instance of the Logger class.
+        _lock (threading.Lock):
+            A lock object to synchronize threads during the first instantiation.
+        _initialized (bool):
+            A flag to prevent reinitialization of the logger configuration.
+    """
+
+    _instance = None
+    _lock = threading.Lock()  # Lock to synchronize threads during first instantiation.
+
+    def __new__(cls):
         if cls._instance is None:
             with cls._lock:
-                if cls._instance is None:
+                # Another thread could have created the instance
+                # before we acquired the lock. So check that the
+                # instance is still nonexistent.
+                if not cls._instance:
                     cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self) -> None:
-        if not self._initialized:
-            with self._lock:
-                if not self._initialized:
-                    self._setup_logger()
-                    self._initialized = True
+    def __init__(self):
+        # Prevent reinitialization if __init__ gets called multiple times.
+        if not getattr(self, "_initialized", False):
+            self._setup_logging_config()
+            self._initialized = True
 
-    def _setup_logger(self) -> None:
+    def _setup_logging_config(self) -> None:
         """Configure and set up the logger"""
-        log_config = LogConfig()
-        log_dir = self._create_log_directory()
-
-        self.log_config: dict[str, Any] = {
+        print("Setting up logging configuration")
+        _logging_config: dict[str, Any] = {
             "version": 1,
             "disable_existing_loggers": False,
             "formatters": {
                 "simple": {
-                    "format": log_config.log_format,
+                    "format": (
+                        "[%(asctime)s] [%(levelname)s] [%(name)s] [%(process)d] [%(module)s] %(message)s"
+                    ),
                 },
             },
             "handlers": {
@@ -62,40 +70,52 @@ class Logger:
                     "formatter": "simple",
                     "stream": "ext://sys.stdout",
                 },
-                "info_file_handler": {
+                "file": {
                     "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
                     "formatter": "simple",
-                    "filename": str(log_dir / "app.log"),
-                    "encoding": log_config.encoding,
-                    "backupCount": log_config.backup_count,
-                    "maxBytes": log_config.max_bytes,
+                    "filename": str(config.LOG_DIR / "logs" / "app.log"),
+                    "encoding": "utf8",
+                    "backupCount": 5,
+                    "maxBytes": int(1e6 * 10),  # 10MB
                 },
-            },
-            "root": {
-                "level": config.LOG_LEVEL,
-                "handlers": ["console", "info_file_handler"],
             },
         }
 
-        try:
-            logging.config.dictConfig(self.log_config)
-            self.log = logging.getLogger("app")
-        except Exception as e:
-            msg = f"Failed to initialize logger: {e!s}"
-            raise RuntimeError(msg) from e
-
-    @staticmethod
-    def _create_log_directory() -> Path:
-        """Create and return the log directory"""
-        log_dir = config.LOG_DIR / "logs"
-        try:
-            log_dir.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            msg = f"Failed to create log directory: {e!s}"
-            raise RuntimeError(msg) from e
-        else:
-            return log_dir
+        logging.config.dictConfig(_logging_config)
 
 
-# Global logger instance
-log: logging.Logger = Logger().log
+def get_logger(
+    name: str = "app",
+    level: str = config.LOG_LEVEL,
+    handlers: list[str] | None = None,
+) -> logging.Logger:
+    """
+    Creates and configures a logger instance with the specified name, logging level,
+    and handlers.
+
+    Args:
+        name (str): The name of the logger. Defaults to "app".
+        level (str): The logging level to set for the logger. Defaults to the value
+            of `config.LOG_LEVEL`.
+        handlers (list[str] | None): A list of handler names to attach to the logger.
+            If None, defaults to ["console", "file"].
+
+    Returns:
+        logging.Logger: A configured logger instance.
+    """
+    Logger()
+    if handlers is None:
+        handlers = ["console", "file"]
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    existing_handler_names = {h.name for h in logger.handlers}
+    for handler in handlers:
+        if handler not in existing_handler_names:
+            handler_instance = logging.getHandlerByName(handler)
+            if handler_instance is not None:
+                logger.addHandler(handler_instance)
+    return logger
+
+
+log = get_logger()
