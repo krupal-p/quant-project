@@ -8,20 +8,30 @@ attrs==25.3.0
     # via
     #   jsonschema
     #   referencing
-beautifulsoup4==4.13.3
+beautifulsoup4==4.13.4
     # via yfinance
 blinker==1.9.0
     # via streamlit
 cachetools==5.5.2
     # via streamlit
-certifi==2025.1.31
+certifi==2025.4.26
+    # via
+    #   curl-cffi
+    #   requests
+cffi==1.17.1
+    # via curl-cffi
+charset-normalizer==3.4.2
     # via requests
-charset-normalizer==3.4.1
-    # via requests
-click==8.1.8
+clarabel==0.10.0
+    # via skfolio
+click==8.2.0
     # via streamlit
-concurrent-log-handler==0.9.25
+concurrent-log-handler==0.9.26
     # via quant-project (pyproject.toml)
+curl-cffi==0.11.1
+    # via yfinance
+cvxpy-base==1.6.5
+    # via skfolio
 frozendict==2.4.6
     # via yfinance
 gitdb==4.0.12
@@ -34,66 +44,84 @@ jinja2==3.1.6
     # via
     #   altair
     #   pydeck
+joblib==1.5.0
+    # via
+    #   scikit-learn
+    #   skfolio
 jsonschema==4.23.0
     # via altair
-jsonschema-specifications==2024.10.1
+jsonschema-specifications==2025.4.1
     # via jsonschema
-lxml==5.3.1
+lxml==5.4.0
     # via quant-project (pyproject.toml)
 markupsafe==3.0.2
     # via jinja2
 multitasking==0.0.11
     # via yfinance
-narwhals==1.30.0
-    # via altair
-numpy==2.2.3
+narwhals==1.39.1
+    # via
+    #   altair
+    #   plotly
+numpy==2.2.5
     # via
     #   quant-project (pyproject.toml)
+    #   clarabel
+    #   cvxpy-base
     #   pandas
     #   pydeck
+    #   scikit-learn
     #   scipy
+    #   skfolio
     #   streamlit
     #   yfinance
 packaging==24.2
     # via
     #   altair
+    #   plotly
     #   streamlit
 pandas==2.2.3
     # via
     #   quant-project (pyproject.toml)
+    #   skfolio
     #   streamlit
     #   yfinance
-peewee==3.17.9
+peewee==3.18.1
     # via yfinance
-pillow==11.1.0
+pillow==11.2.1
     # via streamlit
-platformdirs==4.3.6
+platformdirs==4.3.8
     # via yfinance
-polars==1.25.2
+plotly==6.1.0
+    # via skfolio
+polars==1.29.0
     # via quant-project (pyproject.toml)
 portalocker==3.1.1
     # via concurrent-log-handler
-protobuf==5.29.3
-    # via streamlit
-pyarrow==19.0.1
+protobuf==6.31.0
+    # via
+    #   streamlit
+    #   yfinance
+pyarrow==20.0.0
     # via
     #   quant-project (pyproject.toml)
     #   streamlit
-pydantic==2.10.6
+pycparser==2.22
+    # via cffi
+pydantic==2.11.4
     # via
     #   quant-project (pyproject.toml)
     #   pydantic-settings
-pydantic-core==2.27.2
+pydantic-core==2.33.2
     # via pydantic
-pydantic-settings==2.8.1
+pydantic-settings==2.9.1
     # via quant-project (pyproject.toml)
 pydeck==0.9.1
     # via streamlit
 python-dateutil==2.9.0.post0
     # via pandas
-python-dotenv==1.0.1
+python-dotenv==1.1.0
     # via pydantic-settings
-pytz==2025.1
+pytz==2025.2
     # via
     #   pandas
     #   yfinance
@@ -105,27 +133,38 @@ requests==2.32.3
     # via
     #   streamlit
     #   yfinance
-rpds-py==0.23.1
+rpds-py==0.25.0
     # via
     #   jsonschema
     #   referencing
-scipy==1.15.2
-    # via quant-project (pyproject.toml)
+scikit-learn==1.6.1
+    # via skfolio
+scipy==1.15.3
+    # via
+    #   quant-project (pyproject.toml)
+    #   clarabel
+    #   cvxpy-base
+    #   scikit-learn
+    #   skfolio
 six==1.17.0
     # via python-dateutil
+skfolio==0.9.1
+    # via quant-project (pyproject.toml)
 smmap==5.0.2
     # via gitdb
-soupsieve==2.6
+soupsieve==2.7
     # via beautifulsoup4
-streamlit==1.43.2
+streamlit==1.45.1
     # via quant-project (pyproject.toml)
-tenacity==9.0.0
+tenacity==9.1.2
     # via streamlit
+threadpoolctl==3.6.0
+    # via scikit-learn
 toml==0.10.2
     # via streamlit
-tornado==6.4.2
+tornado==6.5
     # via streamlit
-typing-extensions==4.12.2
+typing-extensions==4.13.2
     # via
     #   altair
     #   beautifulsoup4
@@ -133,9 +172,16 @@ typing-extensions==4.12.2
     #   pydantic-core
     #   referencing
     #   streamlit
-tzdata==2025.1
+    #   typing-inspection
+typing-inspection==0.4.0
+    # via
+    #   pydantic
+    #   pydantic-settings
+tzdata==2025.2
     # via pandas
-urllib3==2.3.0
+urllib3==2.4.0
     # via requests
-yfinance==0.2.54
+websockets==15.0.1
+    # via yfinance
+yfinance==0.2.61
     # via quant-project (pyproject.toml)

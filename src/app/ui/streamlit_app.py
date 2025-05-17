@@ -12,7 +12,12 @@ def sidebar():
         title="Black-Scholes",
         icon="📈",
     )
-    pg = st.navigation([home_page, black_scholes_page])
+    pg = st.navigation(
+        {
+            "Home": [home_page],
+            "Options": [black_scholes_page],
+        },
+    )
     pg.run()
 
 
@@ -26,6 +31,8 @@ def home_page_view():
 
 
 def main():
+    log.info("Starting Streamlit app")
+
     st.set_page_config(
         page_title="Quant App",
         layout="wide",

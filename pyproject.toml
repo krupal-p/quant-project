@@ -13,6 +13,7 @@ dependencies = [
     "concurrent-log-handler",
     "lxml",
     "scipy",
+    "skfolio>=0.9.0",
 ]
 
 
