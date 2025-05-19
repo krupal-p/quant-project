@@ -8,52 +8,24 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler  # type: ignore
 from app import config
 
 
-class Logger:
+@lambda _: _()
+def setup_logging():
     """
-    Logger is a thread-safe singleton class responsible for configuring and managing the application's logging setup.
+    Initializes and configures the logging system for the application.
 
-    This class ensures that only one instance of the logger is created and shared across the application. It uses a lock
-    to synchronize threads during the first instantiation and prevents reinitialization of the logger configuration.
+    This function sets up both console and rotating file handlers with a simple log format.
+    It uses a thread lock to ensure thread-safe configuration. The file handler writes logs
+    to a specified file with rotation based on file size and backup count. The configuration
+    disables the removal of existing loggers and applies the settings using Python's
+    logging configuration dictionary.
 
-    Methods:
-        __new__(cls):
-            Ensures that only one instance of the Logger class is created (singleton pattern).
-        __init__():
-            Initializes the logger configuration if it hasn't been initialized already.
-        _setup_logging_config():
-            Configures the logging settings, including formatters, handlers, and log file rotation.
-
-    Attributes:
-        _instance (Logger or None):
-            Holds the singleton instance of the Logger class.
-        _lock (threading.Lock):
-            A lock object to synchronize threads during the first instantiation.
-        _initialized (bool):
-            A flag to prevent reinitialization of the logger configuration.
+    Raises:
+        Exception: If the logging configuration fails to apply.
     """
 
-    _instance = None
-    _lock = threading.Lock()  # Lock to synchronize threads during first instantiation.
-
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                # Another thread could have created the instance
-                # before we acquired the lock. So check that the
-                # instance is still nonexistent.
-                if not cls._instance:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self):
-        # Prevent reinitialization if __init__ gets called multiple times.
-        if not getattr(self, "_initialized", False):
-            self._setup_logging_config()
-            self._initialized = True
-
-    def _setup_logging_config(self) -> None:
-        """Configure and set up the logger"""
-        print("Setting up logging configuration")
+    print("Initializing logging configuration")
+    lock = threading.Lock()
+    with lock:
         _logging_config: dict[str, Any] = {
             "version": 1,
             "disable_existing_loggers": False,
@@ -80,7 +52,6 @@ class Logger:
                 },
             },
         }
-
         logging.config.dictConfig(_logging_config)
 
 
@@ -103,7 +74,6 @@ def get_logger(
     Returns:
         logging.Logger: A configured logger instance.
     """
-    Logger()
     if handlers is None:
         handlers = ["console", "file"]
     logger = logging.getLogger(name)
