@@ -120,10 +120,7 @@ uv pip install -r requirements.txt
 ## Upgrading Packages
 
 ```sh
-# Upgrade a specific package to latest version
-uv add "requests@latest"
-
-# Or use the lock command to upgrade
+# use the lock command to upgrade
 uv lock --upgrade-package requests
 
 # Upgrade all packages to their latest compatible versions
@@ -236,3 +233,5 @@ cd src/app/ui && streamlit run streamlit_app.py
 docker compose up -d
 docker compose down
 ```
+
+---
