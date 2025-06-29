@@ -1,0 +1,17 @@
+active = "local"
+
+[profiles.local]
+PREFECT_API_URL = "http://127.0.0.1:4205/api"
+PREFECT_API_AUTH_STRING = "test"
+PREFECT_SERVER_API_AUTH_STRING = "test"
+PREFECT_LOGGING_LEVEL = "DEBUG"
+PREFECT_DEBUG_MODE = "True"
+PREFECT_API_DATABASE_CONNECTION_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/prefect"
+
+[profiles.dev]
+PREFECT_API_URL = "http://127.0.0.1:4200/api"
+PREFECT_API_AUTH_STRING = "test"
+PREFECT_SERVER_API_AUTH_STRING = "test"
+PREFECT_LOGGING_LEVEL = "DEBUG"
+PREFECT_DEBUG_MODE = "False"
+PREFECT_API_DATABASE_CONNECTION_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/prefect"

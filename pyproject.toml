@@ -1,6 +1,7 @@
 [project]
 name = "quant-project"
 version = "0.0.1"
+description = "A project demonstrating quantitative analytics, data engineering, and software development skills."
 requires-python = ">=3.12"
 dependencies = [
     "adbc-driver-postgresql>=1.6.0",
@@ -41,4 +42,3 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 app = ["**/*", ".*"]
-

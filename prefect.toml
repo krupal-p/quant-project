@@ -1,0 +1,8 @@
+profiles_path = "profiles.toml"
+
+
+[logging]
+extra_loggers = "app"
+
+[server]
+analytics_enabled = false

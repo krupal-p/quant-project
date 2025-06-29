@@ -1,29 +1,40 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Streamlit app",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "streamlit",
-            "cwd": "${workspaceFolder}/src/app/ui",
-            "args": [
-                "run",
-                "streamlit_app.py"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src/app"
-            }
-        },
-        {
-            "name": "Python Debugger: Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Streamlit app",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "cwd": "${workspaceFolder}/src/app/ui",
+      "args": ["run", "streamlit_app.py"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/app"
+      }
+    },
+    {
+      "name": "Prefect Server",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "prefect",
+      "args": ["server", "start", "--port", "4205"]
+    },
+    {
+      "name": "Prefect Worker",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "prefect",
+      "args": ["worker", "start", "-p", "demo", "-n", "worker1", "--limit", "5"]
+    },
+    {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    }
+  ]
 }
