@@ -1,0 +1,12 @@
+dbt_quant:
+  outputs:
+    dev:
+      dbname: quant
+      host: localhost
+      pass: postgres
+      port: 5432
+      schema: public
+      threads: 4
+      type: postgres
+      user: postgres
+  target: dev
