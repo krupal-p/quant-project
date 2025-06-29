@@ -1,17 +1,24 @@
+# docker run -d --name postgres -v prefectdb:/var/lib/postgresql/data -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=prefect postgres:latest
+ 
 services:
-  sqlserver:
-    container_name: container-sql
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    hostname: localhost
-    ports:
-      - "1433:1433"
+  postgres:
+    image: postgres:latest
+    container_name: postgres_multi_db
     environment:
-      ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: Hm](~/880\9I
-      MSSQL_PID: Evaluation
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_MULTIPLE_DATABASES: prefect,quant
     volumes:
-      - sqlserver-data:/var/opt/mssql
+      - ./init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+      - quantdb:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
     restart: unless-stopped
+    command: >
+      bash -c "
+        chmod +x /docker-entrypoint-initdb.d/init-multiple-databases.sh &&
+        exec docker-entrypoint.sh postgres
+      "
 
 volumes:
-  sqlserver-data:
+  quantdb: 
