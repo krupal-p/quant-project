@@ -1,24 +1,40 @@
 import re
 import time
+import unicodedata
 from functools import wraps
 
 from app import log
 
 
-def to_snake_case(string: str) -> str:
-    # Replace spaces and hyphens with underscores
-    string = string.replace(" ", "_").replace("-", "_")
-    # Convert CamelCase or PascalCase to snake_case
-    string = re.sub(r"(?<!^)(?=[A-Z][a-z])", "_", string)
-    # Handle numbers and mixed characters
-    string = re.sub(r"(?<=[a-zA-Z])(?=\d)", "_", string)
-    string = re.sub(r"(?<=\d)(?=[a-zA-Z])", "_", string)
-    # Handle consecutive underscores
-    string = re.sub(r"__+", "_", string)
-    # Remove special characters
-    string = re.sub(r"[^\w\s]", "", string)
-    # Convert to lowercase
-    return string.lower()
+def to_snake_case(value: str) -> str:
+    # Normalize unicode to ASCII
+    value = (
+        unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    )
+
+    # Replace all non-alphanumeric characters with space
+    value = re.sub(r"[^\w]", " ", value)
+
+    # Handle acronym followed by normal word (e.g., 'XMLHttp' -> 'XML Http')
+    value = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", value)
+
+    # Handle lowercase/digit followed by uppercase (e.g., 'fooBar' -> 'foo Bar')
+    value = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", value)
+
+    # Handle letter followed by digit or digit followed by letter (e.g., 'foo123Bar' -> 'foo 123 Bar')
+    value = re.sub(r"(?<=[A-Za-z])(?=[0-9])", " ", value)
+    value = re.sub(r"(?<=[0-9])(?=[A-Za-z])", " ", value)
+
+    # Replace underscores with space for normalization
+    value = re.sub(r"_+", " ", value)
+
+    # Normalize multiple spaces
+    value = re.sub(r"\s+", " ", value).strip()
+
+    # Split and lowercase
+    parts = value.lower().split()
+
+    return "_".join(parts)
 
 
 def timeit(func):
