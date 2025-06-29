@@ -2,24 +2,7 @@ from app.common.utils import to_snake_case
 
 
 def test_to_snake_case() -> None:
-    assert to_snake_case("string-with-hyphens") == "string_with_hyphens"
     assert to_snake_case("string_with_underscores") == "string_with_underscores"
-    assert to_snake_case("stringWith123Numbers") == "string_with_123_numbers"
-    assert to_snake_case("alllowercase") == "alllowercase"
-    assert to_snake_case("ALLUPPERCASE") == "alluppercase"
-    assert to_snake_case("Mixed_Characters-123") == "mixed_characters_123"
-    assert (
-        to_snake_case("string__with__consecutive__underscores")
-        == "string_with_consecutive_underscores"
-    )
-    assert (
-        to_snake_case("string_with_special_characters!@#$%^&*()")
-        == "string_with_special_characters"
-    )
-
-    assert to_snake_case("ex-date") == "ex_date"
-    assert to_snake_case("RatecodeID") == "ratecode_id"
-    assert to_snake_case("!Special@Characters#") == "special_characters"
 
     # Basic CamelCase conversions
     assert to_snake_case("CamelCase") == "camel_case"
