@@ -32,7 +32,7 @@ def to_snake_case(value: str) -> str:
     value = re.sub(r"\s+", " ", value).strip()
 
     # Split and lowercase
-    parts = value.lower().split()
+    parts: list[str] = value.lower().split()
 
     return "_".join(parts)
 
