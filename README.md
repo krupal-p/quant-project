@@ -227,11 +227,87 @@ cd src/app/ui && streamlit run streamlit_app.py
 
 ---
 
-## Run SQL Server in Docker
+# Prefect Commands
+
+#### Starting and Stopping the Prefect Server
 
 ```sh
-docker compose up -d
-docker compose down
+# Start the Prefect server
+prefect server start --port 4205
+prefect server start -b
+
+# Stop the Prefect server
+prefect server stop
 ```
 
----
+#### Work Pools and Workers
+
+```sh
+# Create a work pool
+prefect work-pool create --type process demo
+
+# Start a worker
+prefect worker start -p demo -n worker1 --limit 5
+prefect worker start -p demo -n worker2
+
+# List all work pools
+prefect work-pool ls
+
+# Inspect a work pool
+prefect work-pool inspect "demo"
+
+# View upcoming flow runs for a work pool
+prefect work-pool preview 'demo'
+prefect work-pool preview 'demo' --hours 12
+```
+
+#### Configuration
+
+```sh
+# Set the database connection URL
+prefect config set PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/postgres"
+
+# View current configuration
+prefect config view
+
+# View configuration with defaults and sources
+prefect config view --show-defaults --show-sources
+
+# Validate configuration
+prefect config validate
+```
+
+#### Profiles
+
+Run before starting the server
+
+```sh
+# Switch to the local profile
+prefect profile use local
+
+# Switch to the dev profile
+prefect profile use dev
+```
+
+#### Deployments
+
+```sh
+# Update a specific deployment
+prefect deploy
+
+# Deploy all deployments
+prefect deploy --all
+```
+
+#### Proxy settings
+
+```sh
+export HTTPS_PROXY="http://your-proxy-server:port"
+export HTTP_PROXY="http://your-proxy-server:port"
+export NO_PROXY="localhost,127.0.0.1"
+```
+
+### References
+
+- [CLI Reference](https://docs.prefect.io/v3/api-ref/cli/artifact)
+- [Settings Reference](https://docs.prefect.io/v3/api-ref/settings-ref)
