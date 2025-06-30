@@ -7,6 +7,8 @@ from typing import Any, Protocol
 from app import config
 from sqlalchemy import (
     Engine,
+    Executable,
+    MappingResult,
     MetaData,
     Table,
     create_engine,
@@ -142,25 +144,27 @@ class DB:
 
     def execute(
         self,
-        stmt: str,
+        stmt: str | Executable,
         params: dict[str, Any] | Sequence[dict[str, Any]] | None = None,
-    ) -> Result:
+    ) -> MappingResult:
         """
         Execute a raw SQL statement.
         """
+        if isinstance(stmt, str):
+            stmt = text(stmt)
         try:
             with self._engine.begin() as conn:
                 return conn.execute(
-                    text(stmt),
+                    stmt,
                     params,
-                )
+                ).mappings()
         except SQLAlchemyError:
             logger.exception("Error executing statement: %s", stmt)
             raise
 
     def fetch_one(
         self,
-        stmt: Any,
+        stmt: str | Executable,
         params: dict[str, Any] | Sequence[dict[str, Any]] | None = None,
     ) -> Any:
         """
@@ -171,7 +175,7 @@ class DB:
 
     def fetch_all(
         self,
-        stmt: Any,
+        stmt: str | Executable,
         params: dict[str, Any] | Sequence[dict[str, Any]] | None = None,
     ) -> list[Any]:
         """
@@ -216,10 +220,8 @@ class DB:
         table = self.get_table(table_name, schema)
         stmt = insert(table)
         try:
-            with self._engine.connect() as conn:
-                result = conn.execute(stmt, values)
-                conn.commit()
-                return result
+            with self._engine.begin() as conn:
+                return conn.execute(stmt, values)
         except SQLAlchemyError:
             logger.exception("Error inserting into %s", table_name)
             raise
