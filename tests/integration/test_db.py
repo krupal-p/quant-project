@@ -76,7 +76,6 @@ def test_delete(db, test_table):
     assert rows == []
 
 
-@pytest.mark.dependency(depends=["test_insert_and_select", "test_update"])
 def test_fetch_one_and_fetch_all(db, test_table):
     db.insert(
         "test_table",
@@ -122,3 +121,103 @@ def test_transaction_commit_and_rollback(db, test_table):
         pass
     rows = db.select("test_table", where={"id": 8})
     assert rows == []
+
+
+@pytest.fixture(scope="module")
+def merge_tables(db):
+    metadata = db.metadata
+    # Create target table
+    target = Table(
+        "merge_target",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("name", String(50)),
+        Column("value", Integer),
+    )
+    # Create source table
+    source = Table(
+        "merge_source",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("name", String(50)),
+        Column("value", Integer),
+    )
+    target.create(db._engine)
+    source.create(db._engine)
+    yield {"target": target, "source": source}
+    source.drop(db._engine)
+    target.drop(db._engine)
+
+
+@pytest.mark.parametrize("db_engine", ["sqlite", "postgres"], indirect=True)
+def test_merge_insert_and_update(db, merge_tables):
+    # Insert initial data into target and source
+    db.insert(
+        "merge_target",
+        [
+            {"id": 1, "name": "Alice", "value": 10},
+            {"id": 2, "name": "Bob", "value": 20},
+        ],
+    )
+    db.insert(
+        "merge_source",
+        [
+            {"id": 2, "name": "Bob", "value": 25},  # Should update value
+            {"id": 3, "name": "Charlie", "value": 30},  # Should insert new row
+        ],
+    )
+
+    # Perform merge on 'id' key
+    db.merge(
+        source_table="merge_source",
+        target_table="merge_target",
+        keys=["id"],
+        update_columns=["name", "value"],
+    )
+
+    rows = db.select("merge_target", order_by=[merge_tables["target"].c.id])
+    assert len(rows) == 3
+    assert rows[0]["id"] == 1
+    assert rows[0]["name"] == "Alice"
+    assert rows[0]["value"] == 10
+    assert rows[1]["id"] == 2
+    assert rows[1]["name"] == "Bob"
+    assert rows[1]["value"] == 25
+    assert rows[2]["id"] == 3
+    assert rows[2]["name"] == "Charlie"
+    assert rows[2]["value"] == 30
+
+
+@pytest.mark.parametrize("db_engine", ["sqlite", "postgres"], indirect=True)
+def test_merge_with_custom_update_columns(db, merge_tables):
+    db.insert("merge_target", {"id": 1, "name": "Alice", "value": 100})
+    db.insert("merge_source", {"id": 1, "name": "Alicia", "value": 200})
+
+    # Only update 'name', not 'value'
+    db.merge(
+        source_table="merge_source",
+        target_table="merge_target",
+        keys=["id"],
+        update_columns=["name"],
+    )
+
+    row = db.select("merge_target", where={"id": 1})[0]
+    assert row["name"] == "Alicia"
+    assert row["value"] == 100  # value should remain unchanged
+
+
+@pytest.mark.parametrize("db_engine", ["sqlite", "postgres"], indirect=True)
+def test_merge_with_no_update_columns(db, merge_tables):
+    db.insert("merge_target", {"id": 1, "name": "Alice", "value": 1})
+    db.insert("merge_source", {"id": 1, "name": "Alice", "value": 2})
+
+    # update_columns=None should update all except keys
+    db.merge(
+        source_table="merge_source",
+        target_table="merge_target",
+        keys=["id"],
+        update_columns=None,
+    )
+
+    row = db.select("merge_target", where={"id": 1})[0]
+    assert row["value"] == 2

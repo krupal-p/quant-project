@@ -242,9 +242,8 @@ class DB:
             .where(*[table.c[col] == val for col, val in where.items()])
             .values(**values)
         )
-        with self._engine.connect() as conn:
+        with self._engine.begin() as conn:
             result = conn.execute(stmt)
-            conn.commit()
             return result.rowcount
 
     def delete(
@@ -260,9 +259,8 @@ class DB:
         stmt = delete(table).where(
             *[table.c[col] == val for col, val in where.items()],
         )
-        with self._engine.connect() as conn:
+        with self._engine.begin() as conn:
             result = conn.execute(stmt)
-            conn.commit()
             return result.rowcount
 
     @contextmanager
@@ -286,10 +284,85 @@ class DB:
 
     def raw_query(
         self,
-        sql: str,
+        sql: str | Executable,
         params: dict[str, Any] | Sequence[dict[str, Any]] | None = None,
-    ) -> list[Any]:
+    ) -> list[Any] | None:
         """
         Shortcut for fetch_all on raw SQL.
         """
-        return self.fetch_all(text(sql), params)
+        if isinstance(sql, str):
+            sql = text(sql)
+        with self._engine.begin() as conn:
+            result = conn.execute(sql, params or {})
+            # Only fetch rows if the statement returns rows
+            if result.returns_rows:
+                return [dict(row) for row in result.mappings().fetchall()]
+            return None
+
+    def merge(
+        self,
+        source_table: str,
+        target_table: str,
+        keys: list[str],
+        update_columns: list[str] | None = None,
+        schema: str | None = None,
+    ) -> None:
+        """
+        Merge all rows from source_table into target_table.
+
+        Uses SQL MERGE (e.g., PostgreSQL 15+, SQL Server).
+
+        :param source_table: name of the staging/source table
+        :param target_table: name of the destination table
+        :param keys: list of key columns to match on
+        :param update_columns: list of columns to update (defaults to all except keys)
+        :param schema: optional schema name
+        """
+        tgt = self.get_table(target_table, schema)
+
+        all_cols = [c.name for c in tgt.columns]
+        upd_cols = update_columns or [c for c in all_cols if c not in keys]
+
+        src_full = f"{(schema + '.') if schema else ''}{source_table}"
+        tgt_full = f"{(schema + '.') if schema else ''}{target_table}"
+
+        on_clause = " AND ".join([f"t.{k} = s.{k}" for k in keys])
+        insert_cols = ", ".join(all_cols)
+        insert_vals = ", ".join([f"s.{c}" for c in all_cols])
+        update_set = ", ".join([f"{c} = s.{c}" for c in upd_cols])
+
+        if self._engine.name == "postgresql":
+            merge_sql = f"""
+                MERGE INTO {tgt_full} AS t
+                USING {src_full} AS s
+                ON {on_clause}
+                WHEN MATCHED THEN
+                UPDATE SET {update_set}
+                WHEN NOT MATCHED THEN
+                INSERT ({insert_cols}) VALUES ({insert_vals});
+                """
+            self.raw_query(merge_sql)
+        elif self._engine.name == "sqlite":
+            # SQLite: emulate merge using INSERT ... ON CONFLICT DO UPDATE
+            # Assumes source_table contains the rows to merge
+            source_rows = self.select(source_table)
+            for row in source_rows:
+                insert_dict = {col: row[col] for col in insert_cols.split(", ")}
+                if update_columns is None:
+                    update_cols = [col for col in insert_dict if col not in keys]
+                else:
+                    update_cols = update_columns
+                update_assignments = ", ".join(
+                    [f"{col}=excluded.{col}" for col in update_cols],
+                )
+                columns_str = ", ".join(insert_dict.keys())
+                placeholders = ", ".join([f":{col}" for col in insert_dict])
+                sql = (
+                    f"INSERT INTO {target_table} ({columns_str}) VALUES ({placeholders}) "
+                    f"ON CONFLICT({', '.join(keys)}) DO UPDATE SET {update_assignments}"
+                )
+                self.execute(sql, insert_dict)
+        else:
+            raise NotImplementedError(
+                "Merge is only implemented for PostgreSQL and SQLite",
+            )
