@@ -1,10 +1,9 @@
-import logging
 import threading
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
-from typing import Any, Protocol
+from typing import Any, ClassVar, Self
 
-from app import config
+from app import config, log
 from sqlalchemy import (
     Engine,
     Executable,
@@ -21,108 +20,40 @@ from sqlalchemy import (
 from sqlalchemy.engine import Connection, Result
 from sqlalchemy.exc import SQLAlchemyError
 
-logger = logging.getLogger(__name__)
-
-
-class DBEngine(Protocol):
-    def get_engine(self) -> Engine: ...
-
-    def get_metadata(self) -> MetaData: ...
-
-
-class SQLiteEngine:
-    # Singleton instance of the SQLiteEngine
-    _instance = None
-    _sqlite: Engine
-    _metadata: MetaData
-    _lock = threading.Lock()
-
-    def __new__(cls):
-        if cls._instance is None:
-            # Ensure thread safety when creating the singleton instance
-            with cls._lock:
-                # Check again in case another thread created the instance
-                if cls._instance is None:
-                    # Create the singleton instance and the SQLAlchemy engine
-                    cls._instance = super().__new__(cls)
-                    cls._sqlite: Engine = create_engine("sqlite:///:memory:")
-                    cls._metadata = MetaData()
-        return cls._instance
-
-    def get_engine(self) -> Engine:
-        return self._sqlite
-
-    def get_metadata(self) -> MetaData:
-        return self._metadata
-
-
-class PgEngine:
-    # Singleton instance of the PgEngine
-    _instance = None
-    _pg: Engine
-    _metadata: MetaData
-    _lock = threading.Lock()
-
-    def __new__(cls):
-        if cls._instance is None:
-            # Ensure thread safety when creating the singleton instance
-            with cls._lock:
-                # Check again in case another thread created the instance
-                if cls._instance is None:
-                    # Create the singleton instance and the SQLAlchemy engine
-                    cls._instance = super().__new__(cls)
-                    cls._pg: Engine = create_engine(
-                        config.POSTGRES_URL,
-                    )
-                    cls._metadata = MetaData()
-        return cls._instance
-
-    def get_engine(self) -> Engine:
-        """
-        Returns the SQLAlchemy engine for PostgreSQL.
-
-        This method provides access to the SQLAlchemy engine used for database operations.
-
-        Returns:
-            Engine: The SQLAlchemy engine for PostgreSQL.
-        """
-        return self._pg
-
-    def get_metadata(self) -> MetaData:
-        """
-        Returns the metadata object associated with the PostgresEngine.
-
-        This metadata object is used to reflect database schema and manage table definitions.
-
-        Returns:
-            MetaData: The SQLAlchemy metadata object.
-        """
-        return self._metadata
-
-
-def get_db_engine(db_type: str) -> Engine:
-    if db_type == "postgres":
-        return PgEngine().get_engine()
-    if db_type == "sqlite":
-        return SQLiteEngine().get_engine()
-    msg = f"{db_type} is not a valid database type. Supported types are: 'postgres', 'sqlite'."
-    raise ValueError(msg)
-
-
-def get_metadata(db_type: str) -> MetaData:
-    if db_type == "postgres":
-        return PgEngine().get_metadata()
-    if db_type == "sqlite":
-        return SQLiteEngine().get_metadata()
-    msg = f"{db_type} is not a valid database type. Supported types are: 'postgres', 'sqlite'."
-    raise ValueError(msg)
-
 
 class DB:
-    def __init__(self, db_engine: DBEngine):
-        self._engine: Engine = db_engine.get_engine()
-        self.metadata: MetaData = db_engine.get_metadata()
+    _instances: ClassVar[dict[str, "DB"]] = {}
+    _lock: ClassVar[threading.Lock] = threading.Lock()
+
+    def __new__(cls, db_url: str) -> "DB":
+        with cls._lock:
+            if db_url not in cls._instances:
+                instance: Self = super().__new__(cls)
+                cls._instances[db_url] = instance
+        return cls._instances[db_url]
+
+    def __init__(self, db_url: str, pool_size=10, max_overflow=20):
+        # Prevent re-initialization if instance already exists
+        if hasattr(self, "_initialized") and self._initialized:
+            return
+        if "sqlite" in db_url:
+            self._engine = create_engine(db_url)
+        else:
+            self._engine: Engine = create_engine(
+                db_url,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
+            )
+        self.metadata: MetaData = MetaData()
+        self.dialect = self._engine.dialect.name.lower()
         self._tables: dict[str, Table] = {}
+        self._initialized = True
+
+    def get_engine(self) -> Engine:
+        """
+        Returns the SQLAlchemy engine for this database instance.
+        """
+        return self._engine
 
     def reflect_table(self, table_name: str, schema: str | None = None) -> Table:
         """
@@ -159,7 +90,7 @@ class DB:
                     params,
                 ).mappings()
         except SQLAlchemyError:
-            logger.exception("Error executing statement: %s", stmt)
+            log.exception("Error executing statement: %s", stmt)
             raise
 
     def fetch_one(
@@ -223,7 +154,7 @@ class DB:
             with self._engine.begin() as conn:
                 return conn.execute(stmt, values)
         except SQLAlchemyError:
-            logger.exception("Error inserting into %s", table_name)
+            log.exception("Error inserting into %s", table_name)
             raise
 
     def update(
@@ -363,6 +294,18 @@ class DB:
                 )
                 self.execute(sql, insert_dict)
         else:
+            msg = "Merge is only implemented for PostgreSQL and SQLite"
             raise NotImplementedError(
-                "Merge is only implemented for PostgreSQL and SQLite",
+                msg,
             )
+
+
+def get_db(db_key: str) -> DB:
+    db_conns = {"sqlite": "sqlite:///:memory:", "postgres": config.POSTGRES_URL}
+
+    return DB(db_conns[db_key])
+
+
+print(get_db("sqlite") is get_db("sqlite"))
+print(get_db("postgres") is get_db("postgres"))
+print("hello")

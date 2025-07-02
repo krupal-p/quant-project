@@ -1,35 +1,26 @@
 import pytest
-from app.common.db import DB, PgEngine, SQLiteEngine, get_db_engine
+from app import config
+from app.common.db import DB, get_db
 from sqlalchemy import Column, Integer, MetaData, String, Table, text
 
 
 def test_pg():
     # Test the connection to the PostgreSQL database
-    with get_db_engine("postgres").connect() as conn:
+    with get_db("postgres").get_engine().connect() as conn:
         result = conn.execute(text("SELECT 1"))
         assert result.scalar() == 1
 
 
 def test_sqlite():
     # Test the connection to the SQLite database
-    with get_db_engine("sqlite").connect() as conn:
+    with get_db("sqlite").get_engine().connect() as conn:
         result = conn.execute(text("SELECT 1"))
         assert result.scalar() == 1
 
 
-@pytest.fixture(params=["sqlite", "postgres"], scope="module")
-def db_engine(request):
-    if request.param == "sqlite":
-        return SQLiteEngine()
-    if request.param == "postgres":
-        return PgEngine()
-    msg = "Unsupported db type"
-    raise ValueError(msg)
-
-
-@pytest.fixture(scope="module")
-def db(db_engine):
-    return DB(db_engine)
+@pytest.fixture(scope="module", params=["sqlite", "postgres"])
+def db(request) -> DB:
+    return get_db(request.param)
 
 
 @pytest.fixture(scope="module")
@@ -88,7 +79,7 @@ def test_fetch_one_and_fetch_all(db, test_table):
     assert len(all_rows) == 4
 
 
-def test_execute_and_raw_query(db, test_table):
+def test_execute_and_raw_query(db: DB, test_table):
     db.execute(
         "INSERT INTO test_table (id, name) VALUES (:id, :name)",
         {"id": 6, "name": "Frank"},
@@ -149,7 +140,7 @@ def merge_tables(db):
     target.drop(db._engine)
 
 
-@pytest.mark.parametrize("db_engine", ["sqlite", "postgres"], indirect=True)
+@pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
 def test_merge_insert_and_update(db, merge_tables):
     # Insert initial data into target and source
     db.insert(
@@ -188,8 +179,8 @@ def test_merge_insert_and_update(db, merge_tables):
     assert rows[2]["value"] == 30
 
 
-@pytest.mark.parametrize("db_engine", ["sqlite", "postgres"], indirect=True)
-def test_merge_with_custom_update_columns(db, merge_tables):
+@pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
+def test_merge_with_custom_update_columns(db: DB, merge_tables):
     db.insert("merge_target", {"id": 1, "name": "Alice", "value": 100})
     db.insert("merge_source", {"id": 1, "name": "Alicia", "value": 200})
 
@@ -206,7 +197,7 @@ def test_merge_with_custom_update_columns(db, merge_tables):
     assert row["value"] == 100  # value should remain unchanged
 
 
-@pytest.mark.parametrize("db_engine", ["sqlite", "postgres"], indirect=True)
+@pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
 def test_merge_with_no_update_columns(db, merge_tables):
     db.insert("merge_target", {"id": 1, "name": "Alice", "value": 1})
     db.insert("merge_source", {"id": 1, "name": "Alice", "value": 2})
