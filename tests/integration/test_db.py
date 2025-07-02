@@ -23,16 +23,22 @@ def db(request) -> DB:
     return get_db(request.param)
 
 
-@pytest.fixture(scope="module")
-def test_table(db):
-    metadata = db.metadata
-    table = Table(
-        "test_table",
-        metadata,
-        Column("id", Integer, primary_key=True),
-        Column("name", String(50)),
-    )
-    table.create(db._engine)
+@pytest.fixture
+def test_table(db: DB):
+    if "test_table" in db.metadata.tables:
+        table = db.metadata.tables["test_table"]
+    else:
+        table = Table(
+            "test_table",
+            db.metadata,
+            Column("id", Integer, primary_key=True),
+            Column("name", String(50)),
+        )
+
+    # Ensure table exists in database (create if not exists)
+    table.create(db._engine, checkfirst=True)
+    with db._engine.begin() as conn:
+        conn.execute(table.delete())
     yield table
     table.drop(db._engine)
 
@@ -76,7 +82,7 @@ def test_fetch_one_and_fetch_all(db, test_table):
     row = db.fetch_one(stmt, {"id": 4})
     assert row["name"] == "Daisy"
     all_rows = db.fetch_all(text("SELECT * FROM test_table"))
-    assert len(all_rows) == 4
+    assert len(all_rows) == 2
 
 
 def test_execute_and_raw_query(db: DB, test_table):
@@ -181,6 +187,10 @@ def test_merge_insert_and_update(db, merge_tables):
 
 @pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
 def test_merge_with_custom_update_columns(db: DB, merge_tables):
+    # Clean up tables before test to avoid UNIQUE constraint errors
+    db.execute("DELETE FROM merge_target")
+    db.execute("DELETE FROM merge_source")
+
     db.insert("merge_target", {"id": 1, "name": "Alice", "value": 100})
     db.insert("merge_source", {"id": 1, "name": "Alicia", "value": 200})
 
@@ -199,6 +209,10 @@ def test_merge_with_custom_update_columns(db: DB, merge_tables):
 
 @pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
 def test_merge_with_no_update_columns(db, merge_tables):
+    # Clean up tables before test to avoid UNIQUE constraint errors
+    db.execute("DELETE FROM merge_target")
+    db.execute("DELETE FROM merge_source")
+
     db.insert("merge_target", {"id": 1, "name": "Alice", "value": 1})
     db.insert("merge_source", {"id": 1, "name": "Alice", "value": 2})
 
@@ -209,6 +223,9 @@ def test_merge_with_no_update_columns(db, merge_tables):
         keys=["id"],
         update_columns=None,
     )
+
+    row = db.select("merge_target", where={"id": 1})[0]
+    assert row["value"] == 2
 
     row = db.select("merge_target", where={"id": 1})[0]
     assert row["value"] == 2
