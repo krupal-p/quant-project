@@ -11,6 +11,7 @@ dependencies = [
     "lxml>=5.4.0",
     "numpy>=2.2.6",
     "pandas>=2.3.0",
+    "pandera>=0.24.0",
     "polars>=1.30.0",
     "prefect==3.4.7",
     "prefect-dbt>=0.7.1",
