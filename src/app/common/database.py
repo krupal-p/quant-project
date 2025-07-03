@@ -9,6 +9,7 @@ from sqlalchemy import (
     Executable,
     MappingResult,
     MetaData,
+    RowMapping,
     Table,
     create_engine,
     delete,
@@ -217,7 +218,7 @@ class DB:
         self,
         sql: str | Executable,
         params: dict[str, Any] | Sequence[dict[str, Any]] | None = None,
-    ) -> list[Any] | None:
+    ) -> Sequence[RowMapping] | None:
         """
         Shortcut for fetch_all on raw SQL.
         """
@@ -227,7 +228,7 @@ class DB:
             result = conn.execute(sql, params or {})
             # Only fetch rows if the statement returns rows
             if result.returns_rows:
-                return [dict(row) for row in result.mappings().fetchall()]
+                return result.mappings().fetchall()
             return None
 
     def merge(
