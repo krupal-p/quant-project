@@ -1,6 +1,6 @@
 import pytest
 from app import config
-from app.common.db import DB, get_db
+from app.common.database import DB, get_db
 from sqlalchemy import Column, Integer, MetaData, String, Table, text
 
 
@@ -91,6 +91,7 @@ def test_execute_and_raw_query(db: DB, test_table):
         {"id": 6, "name": "Frank"},
     )
     result = db.raw_query("SELECT name FROM test_table WHERE id=:id", {"id": 6})
+    assert result is not None
     assert result[0]["name"] == "Frank"
 
 
