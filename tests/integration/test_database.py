@@ -42,13 +42,13 @@ def test_table(db: DB):
     table.drop(db._engine)
 
 
-def test_reflect_and_get_table(db, test_table):
-    reflected = db.reflect_table("test_table")
+def test_get_table(db: DB, test_table):
+    reflected = db.get_table("test_table")
     assert reflected.name == "test_table"
     assert db.get_table("test_table") is reflected
 
 
-def test_insert_and_select(db, test_table):
+def test_insert_and_select(db: DB, test_table):
     db.insert("test_table", {"id": 1, "name": "Alice"})
     rows = db.select("test_table")
     assert len(rows) == 1
@@ -56,7 +56,7 @@ def test_insert_and_select(db, test_table):
     assert rows[0]["name"] == "Alice"
 
 
-def test_update(db, test_table):
+def test_update(db: DB, test_table):
     db.insert("test_table", {"id": 2, "name": "Bob"})
     updated = db.update("test_table", {"id": 2}, {"name": "Robert"})
     assert updated == 1
@@ -64,7 +64,7 @@ def test_update(db, test_table):
     assert row["name"] == "Robert"
 
 
-def test_delete(db, test_table):
+def test_delete(db: DB, test_table):
     db.insert("test_table", {"id": 3, "name": "Charlie"})
     deleted = db.delete("test_table", {"id": 3})
     assert deleted == 1.0
@@ -72,7 +72,7 @@ def test_delete(db, test_table):
     assert rows == []
 
 
-def test_fetch_one_and_fetch_all(db, test_table):
+def test_fetch_one_and_fetch_all(db: DB, test_table):
     db.insert(
         "test_table",
         [{"id": 4, "name": "Daisy"}, {"id": 5, "name": "Eve"}],
@@ -94,7 +94,7 @@ def test_execute_and_raw_query(db: DB, test_table):
     assert result[0]["name"] == "Frank"
 
 
-def test_transaction_commit_and_rollback(db, test_table):
+def test_transaction_commit_and_rollback(db: DB, test_table):
     # Commit
     with db.transaction() as conn:
         conn.execute(
@@ -122,7 +122,7 @@ def test_transaction_commit_and_rollback(db, test_table):
 
 
 @pytest.fixture(scope="module")
-def merge_tables(db):
+def merge_tables(db: DB):
     metadata = db.metadata
     # Create target table
     target = Table(
@@ -148,7 +148,7 @@ def merge_tables(db):
 
 
 @pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
-def test_merge_insert_and_update(db, merge_tables):
+def test_merge_insert_and_update(db: DB, merge_tables):
     # Insert initial data into target and source
     db.insert(
         "merge_target",
@@ -169,8 +169,6 @@ def test_merge_insert_and_update(db, merge_tables):
     db.merge(
         source_table="merge_source",
         target_table="merge_target",
-        keys=["id"],
-        update_columns=["name", "value"],
     )
 
     rows = db.select("merge_target", order_by=[merge_tables["target"].c.id])
@@ -199,7 +197,6 @@ def test_merge_with_custom_update_columns(db: DB, merge_tables):
     db.merge(
         source_table="merge_source",
         target_table="merge_target",
-        keys=["id"],
         update_columns=["name"],
     )
 
@@ -209,7 +206,7 @@ def test_merge_with_custom_update_columns(db: DB, merge_tables):
 
 
 @pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
-def test_merge_with_no_update_columns(db, merge_tables):
+def test_merge_with_no_update_columns(db: DB, merge_tables):
     # Clean up tables before test to avoid UNIQUE constraint errors
     db.execute("DELETE FROM merge_target")
     db.execute("DELETE FROM merge_source")
@@ -221,8 +218,6 @@ def test_merge_with_no_update_columns(db, merge_tables):
     db.merge(
         source_table="merge_source",
         target_table="merge_target",
-        keys=["id"],
-        update_columns=None,
     )
 
     row = db.select("merge_target", where={"id": 1})[0]

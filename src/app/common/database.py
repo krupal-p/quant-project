@@ -233,9 +233,9 @@ class DB:
         self,
         source_table: str,
         target_table: str,
-        keys: list[str],
-        update_columns: list[str] | None = None,
-        schema: str | None = None,
+        target_schema: str | None = None,
+        source_schema: str | None = None,
+        update_columns: str | list[str] | None = None,
     ) -> None:
         """
         Merge all rows from source_table into target_table.
@@ -248,50 +248,53 @@ class DB:
         :param update_columns: list of columns to update (defaults to all except keys)
         :param schema: optional schema name
         """
-        tgt = self.get_table(target_table, schema)
+        tgt = self.get_table(target_table, target_schema)
 
         all_cols = [c.name for c in tgt.columns]
-        upd_cols = update_columns or [c for c in all_cols if c not in keys]
+        keys = [c.name for c in tgt.primary_key.columns]
+        if not keys:
+            msg = f"Target table {target_table} has no primary key defined"
+            raise ValueError(msg)
+        if update_columns is None:
+            upd_cols = [c for c in all_cols if c not in keys]
+        elif isinstance(update_columns, str):
+            upd_cols = [update_columns]
+        else:
+            upd_cols = update_columns
 
-        src_full = f"{(schema + '.') if schema else ''}{source_table}"
-        tgt_full = f"{(schema + '.') if schema else ''}{target_table}"
-
-        on_clause = " AND ".join([f"t.{k} = s.{k}" for k in keys])
-        insert_cols = ", ".join(all_cols)
-        insert_vals = ", ".join([f"s.{c}" for c in all_cols])
-        update_set = ", ".join([f"{c} = s.{c}" for c in upd_cols])
+        src_full = f"{source_schema}.{source_table}" if source_schema else source_table
+        tgt_full = f"{target_schema}.{target_table}" if target_schema else target_table
 
         if self._engine.name == "postgresql":
+            on_clause = " AND ".join([f"t.{k} = s.{k}" for k in keys])
+            insert_cols = ", ".join(all_cols)
+            insert_vals = ", ".join([f"s.{c}" for c in all_cols])
+            update_set = ", ".join([f"{c} = s.{c}" for c in upd_cols])
+
             merge_sql = f"""
                 MERGE INTO {tgt_full} AS t
                 USING {src_full} AS s
                 ON {on_clause}
                 WHEN MATCHED THEN
-                UPDATE SET {update_set}
+                    UPDATE SET {update_set}
                 WHEN NOT MATCHED THEN
-                INSERT ({insert_cols}) VALUES ({insert_vals});
-                """
+                    INSERT ({insert_cols}) VALUES ({insert_vals});
+            """
             self.raw_query(merge_sql)
         elif self._engine.name == "sqlite":
-            # SQLite: emulate merge using INSERT ... ON CONFLICT DO UPDATE
-            # Assumes source_table contains the rows to merge
-            source_rows = self.select(source_table)
-            for row in source_rows:
-                insert_dict = {col: row[col] for col in insert_cols.split(", ")}
-                if update_columns is None:
-                    update_cols = [col for col in insert_dict if col not in keys]
-                else:
-                    update_cols = update_columns
-                update_assignments = ", ".join(
-                    [f"{col}=excluded.{col}" for col in update_cols],
-                )
-                columns_str = ", ".join(insert_dict.keys())
-                placeholders = ", ".join([f":{col}" for col in insert_dict])
-                sql = (
-                    f"INSERT INTO {target_table} ({columns_str}) VALUES ({placeholders}) "
-                    f"ON CONFLICT({', '.join(keys)}) DO UPDATE SET {update_assignments}"
-                )
-                self.execute(sql, insert_dict)
+            # SQLite: Use INSERT ... ON CONFLICT DO UPDATE
+            insert_cols = ", ".join(all_cols)
+            # Don't use table alias in SELECT for SQLite
+            insert_vals = ", ".join(all_cols)
+            # Use excluded.column_name to reference new values
+            update_set = ", ".join([f"{c} = excluded.{c}" for c in upd_cols])
+
+            insert_sql = f"""
+                INSERT INTO {tgt_full} ({insert_cols})
+                SELECT {insert_vals} FROM {src_full} WHERE TRUE
+                ON CONFLICT ({", ".join(keys)}) DO UPDATE SET {update_set};
+            """
+            self.raw_query(insert_sql)
         else:
             msg = "Merge is only implemented for PostgreSQL and SQLite"
             raise NotImplementedError(
