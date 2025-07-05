@@ -1,7 +1,6 @@
 import pytest
-from app import config
 from app.common.database import DB, get_db
-from sqlalchemy import Column, Integer, MetaData, String, Table, text
+from sqlalchemy import Column, Integer, String, Table, text
 
 
 def test_pg():
@@ -68,7 +67,7 @@ def test_update(db, test_table):
 def test_delete(db, test_table):
     db.insert("test_table", {"id": 3, "name": "Charlie"})
     deleted = db.delete("test_table", {"id": 3})
-    assert deleted == 1
+    assert deleted == 1.0
     rows = db.select("test_table", where={"id": 3})
     assert rows == []
 
@@ -106,8 +105,8 @@ def test_transaction_commit_and_rollback(db, test_table):
     assert rows
     assert rows[0]["name"] == "Grace"
 
-    # Rollback
-    try:
+    # Test rollback using helper function
+    def _execute_with_rollback():
         with db.transaction() as conn:
             conn.execute(
                 text("INSERT INTO test_table (id, name) VALUES (:id, :name)"),
@@ -115,8 +114,9 @@ def test_transaction_commit_and_rollback(db, test_table):
             )
             msg = "force rollback"
             raise RuntimeError(msg)
-    except RuntimeError:
-        pass
+
+    with pytest.raises(RuntimeError, match="force rollback"):
+        _execute_with_rollback()
     rows = db.select("test_table", where={"id": 8})
     assert rows == []
 
