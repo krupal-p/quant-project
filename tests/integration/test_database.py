@@ -94,33 +94,6 @@ def test_execute_and_raw_query(db: DB, test_table):
     assert result[0]["name"] == "Frank"
 
 
-def test_transaction_commit_and_rollback(db: DB, test_table):
-    # Commit
-    with db.transaction() as conn:
-        conn.execute(
-            text("INSERT INTO test_table (id, name) VALUES (:id, :name)"),
-            {"id": 7, "name": "Grace"},
-        )
-    rows = db.select("test_table", where={"id": 7})
-    assert rows
-    assert rows[0]["name"] == "Grace"
-
-    # Test rollback using helper function
-    def _execute_with_rollback():
-        with db.transaction() as conn:
-            conn.execute(
-                text("INSERT INTO test_table (id, name) VALUES (:id, :name)"),
-                {"id": 8, "name": "Heidi"},
-            )
-            msg = "force rollback"
-            raise RuntimeError(msg)
-
-    with pytest.raises(RuntimeError, match="force rollback"):
-        _execute_with_rollback()
-    rows = db.select("test_table", where={"id": 8})
-    assert rows == []
-
-
 @pytest.fixture(scope="module")
 def merge_tables(db: DB):
     metadata = db.metadata

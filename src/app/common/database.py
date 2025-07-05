@@ -21,6 +21,8 @@ from sqlalchemy import (
 from sqlalchemy.engine import Connection, Result
 from sqlalchemy.exc import SQLAlchemyError
 
+# from adbc_driver_manager.dbapi
+
 
 class DB:
     _instances: ClassVar[dict[str, "DB"]] = {}
@@ -55,6 +57,12 @@ class DB:
         Returns the SQLAlchemy engine for this database instance.
         """
         return self._engine
+
+    def get_adbc_conn(self):
+        """
+        Returns a connection object for ADBC operations.
+        """
+        return self._engine.connect()
 
     def get_table(self, table_name: str, schema: str | None = None) -> Table:
         """
@@ -192,25 +200,6 @@ class DB:
         with self._engine.begin() as conn:
             result = conn.execute(stmt)
             return result.rowcount
-
-    @contextmanager
-    def transaction(self) -> Generator[Connection, None, None]:
-        """
-        Provide a transactional connection.
-        Usage:
-            with db.transaction() as conn:
-                conn.execute(...)
-        """
-        conn = self._engine.connect()
-        trans = conn.begin()
-        try:
-            yield conn
-            trans.commit()
-        except:
-            trans.rollback()
-            raise
-        finally:
-            conn.close()
 
     def raw_query(
         self,
