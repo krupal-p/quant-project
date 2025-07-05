@@ -10,6 +10,20 @@ def test_pg():
         assert result.scalar() == 1
 
 
+def test_get_adbc_conn():
+    # Test the ADBC connection for PostgreSQL
+    db = get_db("postgres")
+    conn = db.get_adbc_conn()
+    assert conn is not None
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT 1")
+        result = cursor.fetchone()
+        assert result is not None
+        assert result[0] == 1
+
+    conn.close()
+
+
 def test_sqlite():
     # Test the connection to the SQLite database
     with get_db("sqlite").get_engine().connect() as conn:

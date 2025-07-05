@@ -1,14 +1,15 @@
 import threading
-from collections.abc import Generator, Sequence
-from contextlib import contextmanager
+from collections.abc import Sequence
 from typing import Any, ClassVar, Self
 
+from adbc_driver_manager.dbapi import Connection
 from app import config, log
 from sqlalchemy import (
     Engine,
     Executable,
     MappingResult,
     MetaData,
+    Result,
     RowMapping,
     Table,
     create_engine,
@@ -18,10 +19,7 @@ from sqlalchemy import (
     text,
     update,
 )
-from sqlalchemy.engine import Connection, Result
 from sqlalchemy.exc import SQLAlchemyError
-
-# from adbc_driver_manager.dbapi
 
 
 class DB:
@@ -47,6 +45,7 @@ class DB:
                 pool_size=pool_size,
                 max_overflow=max_overflow,
             )
+        self.db_url = db_url
         self.metadata: MetaData = MetaData()
         self.dialect = self._engine.dialect.name.lower()
         self._tables: dict[str, Table] = {}
@@ -58,11 +57,20 @@ class DB:
         """
         return self._engine
 
-    def get_adbc_conn(self):
+    def get_adbc_conn(self) -> Connection:
         """
         Returns a connection object for ADBC operations.
         """
-        return self._engine.connect()
+        if self.dialect != "postgresql":
+            msg = "ADBC connections are only implemented for PostgreSQL"
+            raise NotImplementedError(
+                msg,
+            )
+        from adbc_driver_postgresql.dbapi import connect
+
+        url = self.db_url.replace("postgresql+psycopg", "postgresql")
+
+        return connect(url)
 
     def get_table(self, table_name: str, schema: str | None = None) -> Table:
         """
