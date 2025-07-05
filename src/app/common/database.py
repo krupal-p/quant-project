@@ -56,9 +56,10 @@ class DB:
         """
         return self._engine
 
-    def reflect_table(self, table_name: str, schema: str | None = None) -> Table:
+    def get_table(self, table_name: str, schema: str | None = None) -> Table:
         """
-        Reflect and cache a table.
+        Get a table by name, reflecting it if necessary.
+        Caches the table to avoid repeated reflection.
         """
         key = f"{schema}.{table_name}" if schema else table_name
         if key not in self._tables:
@@ -70,9 +71,6 @@ class DB:
             )
             self._tables[key] = table
         return self._tables[key]
-
-    def get_table(self, table_name: str, schema: str | None = None) -> Table:
-        return self.reflect_table(table_name, schema)
 
     def execute(
         self,
@@ -305,8 +303,3 @@ def get_db(db_key: str) -> DB:
     db_conns = {"sqlite": "sqlite:///:memory:", "postgres": config.POSTGRES_URL}
 
     return DB(db_conns[db_key])
-
-
-print(get_db("sqlite") is get_db("sqlite"))
-print(get_db("postgres") is get_db("postgres"))
-print("hello")
