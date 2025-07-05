@@ -107,7 +107,7 @@ def test_to_snake_case() -> None:
     assert to_snake_case("APIKey2024Version") == "api_key_2024_version"
     assert to_snake_case("OAuth2TokenExpiry") == "o_auth_2_token_expiry"
 
-    # Unicode and international characters (if supported)
+    # Unicode and international characters
     assert to_snake_case("café") == "cafe"
     assert to_snake_case("naïve") == "naive"
     assert to_snake_case("résumé") == "resume"
