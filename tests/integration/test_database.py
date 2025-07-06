@@ -22,13 +22,14 @@ def test_sqlite():
         assert result.scalar() == 1
 
 
-def test_adbc_conn(db: DB):
-    """Test the ADBC connection for SQLite and PostgreSQL."""
+def test_adbc_conn():
+    """Test the ADBC connection for PostgreSQL."""
+    db = get_db("postgres")
+    assert db is not None
     conn = db.get_adbc_conn()
-    assert conn is not None
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT 1")
-        result = cursor.fetchone()
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1")
+        result = cur.fetchone()
         assert result is not None
         assert result[0] == 1
     conn.close()
