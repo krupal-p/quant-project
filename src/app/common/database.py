@@ -61,16 +61,19 @@ class DB:
         """
         Returns a connection object for ADBC operations.
         """
-        if self.dialect != "postgresql":
-            msg = "ADBC connections are only implemented for PostgreSQL"
-            raise NotImplementedError(
-                msg,
-            )
-        from adbc_driver_postgresql.dbapi import connect
+        if self.dialect == "postgresql":
+            url = self.db_url.replace("postgresql+psycopg", "postgresql")
+            from adbc_driver_postgresql.dbapi import connect
 
-        url = self.db_url.replace("postgresql+psycopg", "postgresql")
+            return connect(url)
+        if self.dialect == "sqlite":
+            from adbc_driver_sqlite.dbapi import connect
 
-        return connect(url)
+            return connect()
+        msg = f"ADBC connection not implemented for {self.dialect} dialect"
+        raise NotImplementedError(
+            msg,
+        )
 
     def get_table(self, table_name: str, schema: str | None = None) -> Table:
         """
@@ -112,7 +115,7 @@ class DB:
         self,
         stmt: str | Executable,
         params: dict[str, Any] | Sequence[dict[str, Any]] | None = None,
-    ) -> Any:
+    ) -> RowMapping | None:
         """
         Execute and fetch one row.
         """
@@ -123,12 +126,12 @@ class DB:
         self,
         stmt: str | Executable,
         params: dict[str, Any] | Sequence[dict[str, Any]] | None = None,
-    ) -> list[Any]:
+    ) -> Sequence[RowMapping]:
         """
         Execute and fetch all rows.
         """
         result = self.execute(stmt, params)
-        return list(result.fetchall())
+        return result.fetchall()
 
     def select(
         self,
@@ -138,7 +141,7 @@ class DB:
         order_by: list[Any] | None = None,
         limit: int | None = None,
         schema: str | None = None,
-    ) -> list[Any]:
+    ) -> Sequence[RowMapping]:
         """
         Perform a SELECT query.
         """

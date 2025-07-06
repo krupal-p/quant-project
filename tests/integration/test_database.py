@@ -10,20 +10,6 @@ def test_pg():
         assert result.scalar() == 1
 
 
-def test_get_adbc_conn():
-    # Test the ADBC connection for PostgreSQL
-    db = get_db("postgres")
-    conn = db.get_adbc_conn()
-    assert conn is not None
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT 1")
-        result = cursor.fetchone()
-        assert result is not None
-        assert result[0] == 1
-
-    conn.close()
-
-
 def test_sqlite():
     # Test the connection to the SQLite database
     with get_db("sqlite").get_engine().connect() as conn:
@@ -34,6 +20,19 @@ def test_sqlite():
 @pytest.fixture(scope="module", params=["sqlite", "postgres"])
 def db(request) -> DB:
     return get_db(request.param)
+
+
+def test_adbc_conn(db: DB):
+    # Test the ADBC connection for SQLite
+    conn = db.get_adbc_conn()
+    assert conn is not None
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT 1")
+        result = cursor.fetchone()
+        assert result is not None
+        assert result[0] == 1
+
+    conn.close()
 
 
 @pytest.fixture
@@ -93,6 +92,7 @@ def test_fetch_one_and_fetch_all(db: DB, test_table):
     )
     stmt = text("SELECT * FROM test_table WHERE id=:id")
     row = db.fetch_one(stmt, {"id": 4})
+    assert row is not None
     assert row["name"] == "Daisy"
     all_rows = db.fetch_all(text("SELECT * FROM test_table"))
     assert len(all_rows) == 2
