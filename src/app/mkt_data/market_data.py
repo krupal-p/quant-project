@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Literal
 
 import pandas as pd
@@ -22,6 +23,7 @@ def get_yfinance_data(
     return data[market_data_type]
 
 
+@lru_cache
 def get_yfinance_security_data(symbol: str):
     ticker_data = yf.Ticker(symbol)
     symbol_data = yf.Ticker(symbol).info
@@ -32,8 +34,14 @@ def get_yfinance_security_data(symbol: str):
     return Security(**symbol_data, isin=isin)
 
 
+@lru_cache
+def get_yfinance_ticker_data(symbol: str) -> yf.Ticker:
+    return yf.Ticker(symbol)
+
+
+@lru_cache
 def get_sp500_constituents() -> list[SP500Constituent]:
-    tickers = pd.read_html(
+    tickers: pd.DataFrame = pd.read_html(
         "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
     )[0]
 
