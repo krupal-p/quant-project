@@ -16,4 +16,7 @@ primaryColor = "#0075BE"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F2F6"
 textColor = "#000000"
-font = "sans serif"
+# font = "georgia"
+# font = "sans serif"
+font = "nyt-cheltenham"
+# nyt-cheltenham, sans-serif, georgia
