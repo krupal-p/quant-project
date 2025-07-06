@@ -1,19 +1,19 @@
 import streamlit as st
+from streamlit.navigation.page import StreamlitPage
 
 from app import log
-from app.ui.resources import get_executor
-
-
-def run_complextask(num: int):
-    return num * 2
 
 
 def sidebar():
     log.info("Running sidebar")
     st.logo("static/streamlit.png")
 
-    home_page = st.Page(home_page_view, title="Home", icon=":material/home:")
-    options_pages = [
+    home_page: StreamlitPage = st.Page(
+        home_page_view,
+        title="Home",
+        icon=":material/home:",
+    )
+    options_pages: list[StreamlitPage] = [
         st.Page(
             "../options/black_scholes_page.py",
             title="Black-Scholes",
@@ -25,13 +25,23 @@ def sidebar():
             icon="📈",
         ),
     ]
-    pg = st.navigation(
+    portfolio_pages: list[StreamlitPage] = [
+        st.Page(
+            "../portfolio/portfolio_page.py",
+            title="Portfolio Optimization",
+            icon="📊",
+        ),
+    ]
+    pg: StreamlitPage = st.navigation(
+        # [home_page, options_pages[0]],
         {
             "Home": [home_page],
             "Options": options_pages,
+            "Portfolio Optimization": portfolio_pages,
         },
     )
     log.info(pg.url_path)
+
     pg.run()
 
 
@@ -40,18 +50,13 @@ def home_page_view():
         page_title="Quant App",
         layout="wide",
     )
-    log.info("Starting Streamlit app")
+    log.info("Running home page view")
     if st.session_state.get("counter") is None:
         st.session_state.counter = 0
 
     st.write("Counter: ", st.session_state.counter)
     if st.button("Increment counter"):
         st.session_state.counter += 1
-
-    futures = [get_executor().submit(run_complextask, num) for num in range(10)]
-
-    for future in futures:
-        st.write("Result: ", future.result())
 
 
 def main():
