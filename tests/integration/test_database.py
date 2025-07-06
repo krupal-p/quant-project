@@ -207,5 +207,31 @@ def test_merge_with_no_update_columns(db: DB, merge_tables):
     row = db.select(merge_tables["target"].name, where={"id": 1})[0]
     assert row["value"] == 2
 
-    row = db.select(merge_tables["target"].name, where={"id": 1})[0]
-    assert row["value"] == 2
+
+def test_bulk_insert(db: DB, test_table):
+    """Test bulk insert using PyArrow table."""
+    import pyarrow as pa
+
+    data = pa.table(
+        {
+            "id": pa.array([10, 20], type=pa.int32()),
+            "name": pa.array(["Xavier", "Yara"], type=pa.string()),
+        },
+    )
+    if db.dialect == "sqlite":
+        pytest.raises(
+            NotImplementedError,
+            db.bulk_insert,
+            test_table.name,
+            data,
+            mode="create_append",
+        )
+        return
+    if db.dialect == "postgresql":
+        db.bulk_insert(test_table.name, data, mode="append")
+    rows = db.select(test_table.name, order_by=["id"])
+    assert len(rows) == 2
+    assert rows[0]["id"] == 10
+    assert rows[0]["name"] == "Xavier"
+    assert rows[1]["id"] == 20
+    assert rows[1]["name"] == "Yara"

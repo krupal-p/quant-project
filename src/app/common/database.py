@@ -1,7 +1,9 @@
 import threading
 from collections.abc import Sequence
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar, Literal, Self
 
+import pandas as pd
+import pyarrow as pa
 from adbc_driver_manager.dbapi import Connection
 from app import config, log
 from sqlalchemy import (
@@ -66,10 +68,6 @@ class DB:
             from adbc_driver_postgresql.dbapi import connect
 
             return connect(url)
-        if self.dialect == "sqlite":
-            from adbc_driver_sqlite.dbapi import connect
-
-            return connect()
         msg = f"ADBC connection not implemented for {self.dialect} dialect"
         raise NotImplementedError(
             msg,
@@ -174,6 +172,27 @@ class DB:
         except SQLAlchemyError:
             log.exception("Error inserting into %s", table_name)
             raise
+
+    def bulk_insert(
+        self,
+        table_name: str,
+        data: pa.Table | pd.DataFrame,
+        schema: str | None = None,
+        mode: Literal["append", "create", "replace", "create_append"] = "append",
+    ) -> None:
+        """
+        Bulk insert data into a table using ADBC.
+        :param table_name: The name of the table.
+        :param data: The data to insert, as a PyArrow Table or pandas DataFrame.
+        :param schema: The schema of the table.
+        :param mode: The mode for ingestion, e.g., "append", "create", "replace", "create_append".
+        """
+        full_table_name = f"{schema}.{table_name}" if schema else table_name
+
+        with self.get_adbc_conn() as conn:
+            with conn.cursor() as cursor:
+                cursor.adbc_ingest(full_table_name, data, mode=mode)
+            conn.commit()
 
     def update(
         self,
