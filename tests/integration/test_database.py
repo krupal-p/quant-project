@@ -1,30 +1,30 @@
 import uuid
 
 import pytest
-from app.common.database import DB, get_db
-from sqlalchemy import Column, Integer, String, Table, text
+import sqlalchemy as sa
+from app.common import database
 
 
 @pytest.fixture(scope="module", params=["sqlite", "postgres"])
-def db(request) -> DB:
-    return get_db(request.param)
+def db(request) -> database.DB:
+    return database.get_db(request.param)
 
 
 def test_pg():
-    with get_db("postgres").get_engine().connect() as conn:
-        result = conn.execute(text("SELECT 1"))
+    with database.get_db("postgres").get_engine().connect() as conn:
+        result = conn.execute(sa.text("SELECT 1"))
         assert result.scalar() == 1
 
 
 def test_sqlite():
-    with get_db("sqlite").get_engine().connect() as conn:
-        result = conn.execute(text("SELECT 1"))
+    with database.get_db("sqlite").get_engine().connect() as conn:
+        result = conn.execute(sa.text("SELECT 1"))
         assert result.scalar() == 1
 
 
 def test_adbc_conn():
     """Test the ADBC connection for PostgreSQL."""
-    db = get_db("postgres")
+    db = database.get_db("postgres")
     assert db is not None
     conn = db.get_adbc_conn()
     with conn.cursor() as cur:
@@ -36,28 +36,28 @@ def test_adbc_conn():
 
 
 @pytest.fixture
-def test_table(db: DB):
+def test_table(db: database.DB):
     """Create a unique test table for each test."""
     table_name = f"test_table_{uuid.uuid4().hex[:8]}"
-    table = Table(
+    table = sa.Table(
         table_name,
         db.metadata,
-        Column("id", Integer, primary_key=True),
-        Column("name", String(50)),
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("name", sa.String(50)),
     )
     table.create(db._engine)
     yield table
     table.drop(db._engine, checkfirst=True)
 
 
-def test_get_table(db: DB, test_table):
+def test_get_table(db: database.DB, test_table):
     """Test table reflection."""
     reflected = db.get_table(test_table.name)
     assert reflected.name == test_table.name
     assert db.get_table(test_table.name) is reflected
 
 
-def test_insert_and_select(db: DB, test_table):
+def test_insert_and_select(db: database.DB, test_table):
     """Test insert and select operations."""
     db.insert(test_table.name, {"id": 1, "name": "Alice"})
     rows = db.select(test_table.name)
@@ -66,11 +66,11 @@ def test_insert_and_select(db: DB, test_table):
     assert rows[0]["name"] == "Alice"
 
 
-def test_update(db: DB, test_table):
+def test_update(db: database.DB, test_table):
     """Test update operation."""
 
 
-def test_delete(db: DB, test_table):
+def test_delete(db: database.DB, test_table):
     db.insert(test_table.name, {"id": 3, "name": "Charlie"})
     deleted = db.delete(test_table.name, {"id": 3})
     assert deleted == 1.0
@@ -78,20 +78,20 @@ def test_delete(db: DB, test_table):
     assert rows == []
 
 
-def test_fetch_one_and_fetch_all(db: DB, test_table):
+def test_fetch_one_and_fetch_all(db: database.DB, test_table):
     db.insert(
         test_table.name,
         [{"id": 4, "name": "Daisy"}, {"id": 5, "name": "Eve"}],
     )
-    stmt = text(f"SELECT * FROM {test_table.name} WHERE id=:id")
+    stmt = sa.text(f"SELECT * FROM {test_table.name} WHERE id=:id")
     row = db.fetch_one(stmt, {"id": 4})
     assert row is not None
     assert row["name"] == "Daisy"
-    all_rows = db.fetch_all(text(f"SELECT * FROM {test_table.name}"))
+    all_rows = db.fetch_all(sa.text(f"SELECT * FROM {test_table.name}"))
     assert len(all_rows) == 2
 
 
-def test_execute_and_raw_query(db: DB, test_table):
+def test_execute_and_raw_query(db: database.DB, test_table):
     db.execute(
         f"INSERT INTO {test_table.name} (id, name) VALUES (:id, :name)",
         {"id": 6, "name": "Frank"},
@@ -105,22 +105,22 @@ def test_execute_and_raw_query(db: DB, test_table):
 
 
 @pytest.fixture(scope="module")
-def merge_tables(db: DB):
+def merge_tables(db: database.DB):
     metadata = db.metadata
 
-    target = Table(
+    target = sa.Table(
         f"merge_target_{uuid.uuid4().hex[:8]}",
         metadata,
-        Column("id", Integer, primary_key=True),
-        Column("name", String(50)),
-        Column("value", Integer),
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("name", sa.String(50)),
+        sa.Column("value", sa.Integer),
     )
-    source = Table(
+    source = sa.Table(
         f"merge_source_{uuid.uuid4().hex[:8]}",
         metadata,
-        Column("id", Integer, primary_key=True),
-        Column("name", String(50)),
-        Column("value", Integer),
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("name", sa.String(50)),
+        sa.Column("value", sa.Integer),
     )
     target.create(db._engine)
     source.create(db._engine)
@@ -130,7 +130,7 @@ def merge_tables(db: DB):
 
 
 @pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
-def test_merge_insert_and_update(db: DB, merge_tables):
+def test_merge_insert_and_update(db: database.DB, merge_tables):
     # Insert initial data into target and source
     db.insert(
         merge_tables["target"].name,
@@ -170,7 +170,7 @@ def test_merge_insert_and_update(db: DB, merge_tables):
 
 
 @pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
-def test_merge_with_custom_update_columns(db: DB, merge_tables):
+def test_merge_with_custom_update_columns(db: database.DB, merge_tables):
     # Clean up tables before test to avoid UNIQUE constraint errors
     db.execute(f"DELETE FROM {merge_tables['target'].name}")
     db.execute(f"DELETE FROM {merge_tables['source'].name}")
@@ -191,7 +191,7 @@ def test_merge_with_custom_update_columns(db: DB, merge_tables):
 
 
 @pytest.mark.parametrize("db", ["sqlite", "postgres"], indirect=True)
-def test_merge_with_no_update_columns(db: DB, merge_tables):
+def test_merge_with_no_update_columns(db: database.DB, merge_tables):
     # Clean up tables before test to avoid UNIQUE constraint errors
     db.execute(f"DELETE FROM {merge_tables['target'].name}")
     db.execute(f"DELETE FROM {merge_tables['source'].name}")
@@ -209,7 +209,7 @@ def test_merge_with_no_update_columns(db: DB, merge_tables):
     assert row["value"] == 2
 
 
-def test_bulk_insert(db: DB, test_table):
+def test_bulk_insert(db: database.DB, test_table):
     """Test bulk insert using PyArrow table."""
     import pyarrow as pa
 
