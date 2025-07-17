@@ -1,7 +1,6 @@
-from app.common.utils import to_snake_case
-
-
 def test_to_snake_case() -> None:
+    from app.common.utils import to_snake_case
+
     assert to_snake_case("string_with_underscores") == "string_with_underscores"
 
     # Basic CamelCase conversions

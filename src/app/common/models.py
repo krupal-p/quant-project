@@ -18,7 +18,7 @@ class Security(BaseModel):
     short_name: str = Field(alias="shortName")
     long_name: str = Field(alias="longName")
     quote_type: str = Field(alias="quoteType")
-    currency: str
+    currency: str = Field(min_length=3, max_length=3)
     exchange: str
     industry_key: str = Field(alias="industryKey")
     sector_key: str = Field(alias="sectorKey")

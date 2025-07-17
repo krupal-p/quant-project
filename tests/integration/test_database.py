@@ -1,5 +1,3 @@
-import uuid
-
 import pytest
 
 
@@ -41,6 +39,8 @@ def test_adbc_conn():
 @pytest.fixture
 def test_table(db, sa):
     """Create a unique test table for each test."""
+    import uuid
+
     table_name = f"test_table_{uuid.uuid4().hex[:8]}"
     table = sa.Table(
         table_name,
@@ -109,6 +109,8 @@ def test_execute_and_raw_query(db, test_table):
 
 @pytest.fixture(scope="module")
 def merge_tables(db, sa):
+    import uuid
+
     metadata = db.metadata
 
     target = sa.Table(

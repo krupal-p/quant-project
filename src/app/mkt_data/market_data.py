@@ -24,7 +24,7 @@ def get_yfinance_data(
 
 
 @lru_cache
-def get_yfinance_security_data(symbol: str):
+def get_yfinance_security_data(symbol: str) -> Security:
     ticker_data = yf.Ticker(symbol)
     symbol_data = yf.Ticker(symbol).info
     isin = ticker_data.isin
