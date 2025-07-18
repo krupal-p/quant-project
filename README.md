@@ -1,4 +1,4 @@
-# Quant Project
+# Quant Project - WIP
 
 A project demonstrating quantitative analytics, data engineering, and software development skills.
 
