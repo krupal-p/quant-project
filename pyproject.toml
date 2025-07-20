@@ -13,7 +13,7 @@ dependencies = [
     "pandas>=2.3.0",
     "pandera>=0.24.0",
     "polars>=1.30.0",
-    "prefect==3.4.8",
+    "prefect>=3.4.8",
     "prefect-dbt>=0.7.1",
     "psycopg[binary]>=3.2.9",
     "pyarrow>=20.0.0",
