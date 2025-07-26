@@ -19,7 +19,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```sh
 pip install uv
 ```
-
 ---
 
 ## Creating a New Project
