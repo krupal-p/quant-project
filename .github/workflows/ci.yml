@@ -33,10 +33,11 @@ jobs:
         run: |
           pwd
           echo "LOG_LEVEL: ${{ secrets.LOG_LEVEL }}"
-          export LOG_LEVEL=${{ secrets.LOG_LEVEL }}
-          export POSTGRES_URL=${{ secrets.POSTGRES_URL }}
-          export LOG_DIR=${{ secrets.LOG_DIR }}
-          export DBT_PROFILES_DIR=${{ secrets.DBT_PROFILES_DIR }}
-          export DBT_PROJECT_DIR=${{ secrets.DBT_PROJECT_DIR }}
           source .venv/bin/activate
           pytest tests/unit
+        env:
+          LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          LOG_DIR: ${{ secrets.LOG_DIR }}
+          DBT_PROFILES_DIR: ${{ secrets.DBT_PROFILES_DIR }}
+          DBT_PROJECT_DIR: ${{ secrets.DBT_PROJECT_DIR }}
