@@ -3,7 +3,7 @@ import logging.config
 import threading
 from typing import Any
 
-from concurrent_log_handler import ConcurrentRotatingFileHandler  # type: ignore
+from concurrent_log_handler import ConcurrentRotatingFileHandler  # noqa: F401
 
 from app import config
 
