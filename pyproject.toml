@@ -49,17 +49,31 @@ app = ["**/*", ".*"]
 # skip running ruff on __init__.py files
 [tool.ruff]
 lint.select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "C4",  # flake8-comprehensions
-    "B",   # flake8-bugbear
-    "UP",  # pyupgrade
-    "N",   # pep8-naming
-    "COM", # flake8-commas
-    "EM",  # flake8-errmsg
-    "RUF", # Ruff-specific rules
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "C4",     # flake8-comprehensions
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+    "N",      # pep8-naming
+    "COM",    # flake8-commas
+    "EM",     # flake8-errmsg
+    "EM",     # flake8-errmsg
+    "ICN",    # flake8-import-conventions
+    "PT",     # flake8-pytest-style
+    "PTH",    # flake8-use-pathlib
+    "TID",    # flake8-tidy-imports
+    "FA",     # flake8-future-annotations
+    "Q",      # flake8-quotes
+    "RET",    # flake8-return
+    "TD",     # flake8-todos
+    "PIE",    # flake8-pie
+    "SIM",    # flake8-simplify
+    "PD",     # pandas-vet
+    "RUF",    # Ruff-specific rules
+    "TRY",    # tryceratops
+    "FBT001", # flake8-boolean-trap
 ]
 
 line-length = 120
