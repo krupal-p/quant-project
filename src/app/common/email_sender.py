@@ -23,20 +23,30 @@ def email_send_message(
     attachments: str | Path | list[str | Path] | None = None,
     inline_images: dict[str, str] | None = None,
 ) -> MIMEMultipart:
-    """Send an email message with optional HTML/plain content, attachments, and inline images.
+    """Send an email message with optional HTML/plain content,
+    attachments, and inline images.
 
     Parameters
     ----------
         subject (str): The subject of the email.
         msg (str): The HTML content of the email message.
         email_from (str): The sender's email address.
-        email_to (str | list[str] ): Recipient(s) email address(es) for the "To" field.
-        msg_plain (str | None, optional): The plain text version of the email message. Defaults to None.
-        email_to_cc (str | list[str] | None, optional): Recipient(s) email address(es) for the "Cc" field. Defaults to None.
-        email_to_bcc (str | list[str] | None, optional): Recipient(s) email address(es) for the "Bcc" field. Defaults to None.
-        priority (int, optional): Email priority (1 = highest, 5 = lowest). Defaults to 3.
-        attachments (str | list[str] | Path | list[Path] | None, optional): Filepath(s) to attach to the email. Defaults to None.
-        inline_images (dict[str, str] | None, optional): Dictionary mapping Content-ID (cid) to image filepaths for inline images. Defaults to None.
+        email_to (str | list[str]): Recipient(s) email address(es) for
+            the "To" field.
+        msg_plain (str | None, optional): The plain text version of the
+            email message. Defaults to None.
+        email_to_cc (str | list[str] | None, optional): Recipient(s)
+            email address(es) for the "Cc" field. Defaults to None.
+        email_to_bcc (str | list[str] | None, optional): Recipient(s)
+            email address(es) for the "Bcc" field. Defaults to None.
+        priority (int, optional): Email priority (1 = highest, 5 =
+            lowest). Defaults to 3.
+        attachments (str | list[str] | Path | list[Path] | None,
+            optional): Filepath(s) to attach to the email. Defaults to
+            None.
+        inline_images (dict[str, str] | None, optional): Dictionary
+            mapping Content-ID (cid) to image filepaths for inline
+            images. Defaults to None.
 
     Returns
     -------

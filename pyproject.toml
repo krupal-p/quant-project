@@ -48,7 +48,7 @@ app = ["**/*", ".*"]
 
 # skip running ruff on __init__.py files
 [tool.ruff]
-select = [
+lint.select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "F",   # pyflakes
@@ -62,6 +62,6 @@ select = [
     "RUF", # Ruff-specific rules
 ]
 
-line-length = 88
-exclude = [".venv/**", "src/quant_project/app/__init__.py"]
+line-length = 120
+exclude = [".venv/**", "src/app/__init__.py"]
 target-version = "py312"
