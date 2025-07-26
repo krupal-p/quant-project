@@ -14,6 +14,7 @@ A project demonstrating quantitative analytics, data engineering, and software d
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+
 #### Or via pip
 
 ```sh
