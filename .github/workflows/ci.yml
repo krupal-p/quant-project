@@ -30,6 +30,7 @@ jobs:
       - name: Run tests
         run: |
           pwd
+          echo "LOG_LEVEL: ${{ secrets.LOG_LEVEL }}"
           export LOG_LEVEL=${{ secrets.LOG_LEVEL }}
           export POSTGRES_URL=${{ secrets.POSTGRES_URL }}
           export LOG_DIR=${{ secrets.LOG_DIR }}
