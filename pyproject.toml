@@ -48,7 +48,7 @@ app = ["**/*", ".*"]
 
 # skip running ruff on __init__.py files
 [tool.ruff]
-select = [
+lint.select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "F",   # pyflakes
