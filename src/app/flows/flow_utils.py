@@ -1,6 +1,7 @@
-from app.common.email_sender import email_send_message
 from prefect import Flow, Task
 from prefect.client.schemas.objects import FlowRun, State, TaskRun
+
+from app.common.email_sender import email_send_message
 
 
 def task_state_hook(task: Task, task_run: TaskRun, state: State) -> None:

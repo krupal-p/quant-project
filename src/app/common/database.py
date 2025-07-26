@@ -5,7 +5,6 @@ from typing import Any, ClassVar, Literal, Self
 import pandas as pd
 import pyarrow as pa
 from adbc_driver_manager.dbapi import Connection
-from app import config, log
 from sqlalchemy import (
     Engine,
     Executable,
@@ -22,6 +21,8 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.exc import SQLAlchemyError
+
+from app import config, log
 
 
 class DB:

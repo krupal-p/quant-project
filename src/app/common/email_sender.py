@@ -1,6 +1,6 @@
 # Do NOT rename this module to `email.py` as it will conflict with the standard library!
 
-import smtplib
+# import smtplib
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
@@ -22,11 +22,11 @@ def email_send_message(
     priority: int = 3,
     attachments: str | Path | list[str | Path] | None = None,
     inline_images: dict[str, str] | None = None,
-):
-    """
-    Send an email message with optional HTML/plain content, attachments, and inline images.
+) -> MIMEMultipart:
+    """Send an email message with optional HTML/plain content, attachments, and inline images.
 
-    Parameters:
+    Parameters
+    ----------
         subject (str): The subject of the email.
         msg (str): The HTML content of the email message.
         email_from (str): The sender's email address.
@@ -38,14 +38,17 @@ def email_send_message(
         attachments (str | list[str] | Path | list[Path] | None, optional): Filepath(s) to attach to the email. Defaults to None.
         inline_images (dict[str, str] | None, optional): Dictionary mapping Content-ID (cid) to image filepaths for inline images. Defaults to None.
 
-    Returns:
+    Returns
+    -------
         email.message.Message: The constructed email message object.
 
-    Raises:
+    Raises
+    ------
         ValueError: If none of email_to, email_to_cc, or email_to_bcc are specified.
 
     Logs:
         Logs the email parameters and content for debugging purposes.
+
     """
     message = MIMEMultipart()
     message["Subject"] = subject
