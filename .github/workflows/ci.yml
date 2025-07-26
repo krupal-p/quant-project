@@ -18,15 +18,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Create .env file
-        run: |
-          pwd
-          export LOG_LEVEL=${{ secrets.LOG_LEVEL }}
-          export POSTGRES_URL=${{ secrets.POSTGRES_URL }}
-          export LOG_DIR=${{ secrets.LOG_DIR }}
-          export DBT_PROFILES_DIR=${{ secrets.DBT_PROFILES_DIR }}
-          export DBT_PROJECT_DIR=${{ secrets.DBT_PROJECT_DIR }}
-
       - name: Install dependencies
         run: |
           pwd
@@ -39,5 +30,10 @@ jobs:
       - name: Run tests
         run: |
           pwd
+          export LOG_LEVEL=${{ secrets.LOG_LEVEL }}
+          export POSTGRES_URL=${{ secrets.POSTGRES_URL }}
+          export LOG_DIR=${{ secrets.LOG_DIR }}
+          export DBT_PROFILES_DIR=${{ secrets.DBT_PROFILES_DIR }}
+          export DBT_PROJECT_DIR=${{ secrets.DBT_PROJECT_DIR }}
           source .venv/bin/activate
           pytest tests/unit
