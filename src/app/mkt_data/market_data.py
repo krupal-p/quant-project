@@ -3,7 +3,7 @@ from typing import Literal
 
 import pandas as pd
 import yfinance as yf
-from app import log
+
 from app.common.models import Security, SP500Constituent
 
 

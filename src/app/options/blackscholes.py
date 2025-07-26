@@ -1,9 +1,9 @@
-import time
 from collections.abc import Iterable
 
 import numpy as np
-from app.common.utils import timeit
 from scipy import stats
+
+from app.common.utils import timeit
 
 
 @timeit
