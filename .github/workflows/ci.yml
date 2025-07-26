@@ -21,11 +21,11 @@ jobs:
       - name: Create .env file
         run: |
           pwd
-          echo "LOG_LEVEL=${{ secrets.LOG_LEVEL }}" >> .env
-          echo "POSTGRES_URL=${{ secrets.POSTGRES_URL }}" >> .env
-          echo "LOG_DIR=${{ secrets.LOG_DIR }}" >> .env
-          echo "DBT_PROFILES_DIR=${{ secrets.DBT_PROFILES_DIR }}" >> .env
-          echo "DBT_PROJECT_DIR=${{ secrets.DBT_PROJECT_DIR }}" >> .env
+          export LOG_LEVEL=${{ secrets.LOG_LEVEL }}
+          export POSTGRES_URL=${{ secrets.POSTGRES_URL }}
+          export LOG_DIR=${{ secrets.LOG_DIR }}
+          export DBT_PROFILES_DIR=${{ secrets.DBT_PROFILES_DIR }}
+          export DBT_PROJECT_DIR=${{ secrets.DBT_PROJECT_DIR }}
 
       - name: Install dependencies
         run: |
