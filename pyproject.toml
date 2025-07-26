@@ -59,7 +59,6 @@ lint.select = [
     "N",      # pep8-naming
     "COM",    # flake8-commas
     "EM",     # flake8-errmsg
-    "EM",     # flake8-errmsg
     "ICN",    # flake8-import-conventions
     "PT",     # flake8-pytest-style
     "PTH",    # flake8-use-pathlib
