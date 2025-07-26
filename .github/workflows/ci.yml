@@ -38,7 +38,7 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run pytest tests/unit
+          uv run pytest tests/unit --durations=0 -vv
         env:
           LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
