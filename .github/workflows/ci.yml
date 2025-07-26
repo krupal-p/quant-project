@@ -22,7 +22,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pwd
           python -m pip install --upgrade pip
           pip install uv
           uv venv
@@ -31,8 +30,6 @@ jobs:
 
       - name: Run tests
         run: |
-          pwd
-          echo "LOG_LEVEL: ${{ secrets.LOG_LEVEL }}"
           source .venv/bin/activate
           pytest tests/unit
         env:
