@@ -28,6 +28,17 @@ jobs:
           source .venv/bin/activate
           uv sync
 
+      - name: Run Ruff
+        uses: astral-sh/ruff-action@v3.5.0
+        with:
+          args: 
+          src: 
+            src/
+          version:
+          version-file:
+          checksum:
+          github-token: 
+
       - name: Run tests
         run: |
           source .venv/bin/activate
@@ -38,3 +49,4 @@ jobs:
           LOG_DIR: ${{ secrets.LOG_DIR }}
           DBT_PROFILES_DIR: ${{ secrets.DBT_PROFILES_DIR }}
           DBT_PROJECT_DIR: ${{ secrets.DBT_PROJECT_DIR }}
+            - name: ruff-action
