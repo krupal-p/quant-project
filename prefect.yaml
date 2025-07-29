@@ -20,15 +20,22 @@ pull:
 # https://docs.prefect.io/v3/how-to-guides/deployments/prefect-yaml#deployment-declaration-reference
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-  - name: null
-    version: null
-    tags: []
-    description: null
-    schedule: {}
-    flow_name: null
-    entrypoint: null
-    parameters: {}
+  - name: my-flow-deployment
+    description: "Deployment for my_flow"
+    schedule:
+      cron: "0 * * * *"
+      timezone: "America/New_York"
+    concurrency_limit:
+      limit: 1
+      collision_strategy: CANCEL_NEW
+    entrypoint: src/app/flows/my_flow.py:my_flow
     work_pool:
-      name: null
-      work_queue_name: null
-      job_variables: {}
+      name: demo
+  - name: my-flow-2-deployment
+    description: "Deployment for my_flow_2"
+    concurrency_limit:
+      limit: 1
+      collision_strategy: CANCEL_NEW
+    entrypoint: src/app/flows/my_flow.py:my_flow_2
+    work_pool:
+      name: demo
