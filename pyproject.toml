@@ -32,6 +32,7 @@ dev = [
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",
     "pytest-xdist>=3.8.0",
+    "ruff>=0.12.5",
     "watchdog>=6.0.0",
 ]
 
@@ -76,5 +77,8 @@ lint.select = [
 ]
 
 line-length = 120
-exclude = [".venv/**", "src/app/__init__.py"]
+exclude = [".venv/**"]
 target-version = "py312"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401", "I"]
