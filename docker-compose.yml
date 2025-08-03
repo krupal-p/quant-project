@@ -52,24 +52,16 @@ services:
     command: prefect server start --host 0.0.0.0
     ports:
       - "4200:4200"
- 
-  prefect-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      prefect-server:
-        condition: service_started
-    environment:
-      PREFECT_API_URL: http://prefect-server:4200/api
-      LOG_LEVEL: INFO
-      LOG_DIR: /app
-      DBT_PROFILES_DIR: /app/src/dbt_quant
-      DBT_PROJECT_DIR: /app/src/dbt_quant
-      DBT_LOG_PATH: /app/logs
-    command: ["sh", "-c", "cd /app && . .venv/bin/activate && prefect worker start --pool demo"]
-    restart: on-failure:5
 
+  prefect-worker:
+      build: .
+      depends_on:
+        prefect-server:
+          condition: service_started
+      environment:
+        PREFECT_API_URL: http://prefect-server:4200/api
+      command: bash -c "source .venv/bin/activate && export $(grep -v '^#' .env | xargs) && prefect deploy --all && prefect worker start --pool demo"
+      restart: on-failure:3
 
 
 volumes:

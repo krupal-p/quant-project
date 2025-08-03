@@ -1,27 +1,35 @@
-FROM prefecthq/prefect:3.4.11-python3.12
+# 1. Use the official Python 3.12 slim image
+FROM python:3.12-slim-bullseye
 
-# Install uv and add to PATH
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
+SHELL ["/bin/bash", "-c"]
+# 2. Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies for PostgreSQL
-RUN apt-get update && apt-get install -y \
+# Upgrade system packages to address vulnerabilities
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     postgresql-client \
-    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variable for ADBC PostgreSQL
-ENV ADBC_POSTGRESQL_LIBRARY=/usr/lib/x86_64-linux-gnu/libpq.so.5
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# 5. Create a non-root user
+RUN addgroup --system app && adduser --system --group app
 
-# Copy the project into the image
-COPY . /app
-
-# Set working directory
+# 6. Create a directory for the app
 WORKDIR /app
 
-# Create virtual environment and install dependencies
-RUN uv venv
-RUN uv sync --no-dev
 
-# Set environment to use the virtual environment
-ENV PATH="/app/.venv/bin:$PATH"
+COPY ./src ./src
+COPY pyproject.toml .
+COPY ./envs/.env .
+COPY prefect.yaml .
+COPY prefect.toml .
+COPY profiles.toml .
+
+RUN uv venv && \
+    . /app/.venv/bin/activate && \
+    uv sync --no-dev
+
+
+# 9. Switch to the non-root user
+USER app
