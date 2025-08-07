@@ -1,5 +1,5 @@
 # 1. Use the official Python 3.12 slim image
-FROM python:3.12-slim-bullseye
+FROM ghcr.io/astral-sh/uv:0.8.4-python3.12-bookworm
 
 SHELL ["/bin/bash", "-c"]
 # 2. Set environment variables
@@ -11,7 +11,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # 5. Create a non-root user
 RUN addgroup --system app && adduser --system --group app
 
