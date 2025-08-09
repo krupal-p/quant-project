@@ -35,16 +35,13 @@ dev = [
     "ruff>=0.12.5",
     "watchdog>=6.0.0",
 ]
-
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.8.7,<0.9.0"]
+build-backend = "uv_build"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-app = ["**/*", ".*"]
+[tool.uv.build-backend]
+module-name = "app"
+source-include = ["app/**"]
 
 
 # skip running ruff on __init__.py files
