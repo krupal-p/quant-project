@@ -8,9 +8,9 @@
       "name": "Streamlit app",
       "type": "debugpy",
       "request": "launch",
-      "module": "streamlit",
+      "module": "uv",
       "cwd": "${workspaceFolder}/src/app/ui",
-      "args": ["run", "streamlit_app.py"],
+      "args": ["run", "streamlit", "run", "streamlit_app.py"],
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src/app"
       }
@@ -19,15 +19,26 @@
       "name": "Prefect Server",
       "type": "debugpy",
       "request": "launch",
-      "module": "prefect",
-      "args": ["server", "start", "--port", "4205"]
+      "module": "uv",
+      "args": ["run", "prefect", "server", "start", "--port", "4205"]
     },
     {
       "name": "Prefect Worker",
       "type": "debugpy",
       "request": "launch",
-      "module": "prefect",
-      "args": ["worker", "start", "-p", "demo", "-n", "worker1", "--limit", "5"]
+      "module": "uv",
+      "args": [
+        "run",
+        "prefect",
+        "worker",
+        "start",
+        "-p",
+        "demo",
+        "-n",
+        "worker1",
+        "--limit",
+        "5"
+      ]
     },
     {
       "name": "Python Debugger: Current File",
