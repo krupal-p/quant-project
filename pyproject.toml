@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "adbc-driver-postgresql>=1.6.0",
     "concurrent-log-handler>=0.9.26",
-    "dbt-core>=1.10.2",
+    "dbt-core>=1.10.7",
     "dbt-postgres>=1.9.0",
     "lxml>=5.4.0",
     "numpy>=2.2.6",
@@ -35,6 +35,7 @@ dev = [
     "ruff>=0.12.5",
     "watchdog>=6.0.0",
 ]
+
 [build-system]
 requires = ["uv_build>=0.8.7,<0.9.0"]
 build-backend = "uv_build"
@@ -44,7 +45,6 @@ module-name = "app"
 source-include = ["app/**"]
 
 
-# skip running ruff on __init__.py files
 [tool.ruff]
 lint.select = [
     "E",      # pycodestyle errors
