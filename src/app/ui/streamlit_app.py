@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 from streamlit.navigation.page import StreamlitPage
 
@@ -6,7 +8,8 @@ from app import log
 
 def sidebar():
     log.info("Running sidebar")
-    st.logo("static/streamlit.png")
+    logo_image = Path(__file__).parent / "static/streamlit.png"
+    st.logo(logo_image)
 
     home_page: StreamlitPage = st.Page(
         home_page_view,
