@@ -39,3 +39,10 @@ deployments:
     entrypoint: src/app/flows/my_flow.py:my_flow_2
     work_pool:
       name: demo
+    triggers:
+      - type: event
+        enabled: true
+        match_related:
+          prefect.resource.name: my-flow-deployment
+        expect:
+          - prefect.flow-run.Completed
