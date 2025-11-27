@@ -2,7 +2,7 @@ import types
 from datetime import date, datetime, time
 from decimal import Decimal  # Import Decimal
 from enum import Enum
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
 import streamlit as st
 from pydantic import AnyUrl, BaseModel, EmailStr, Field, SecretStr, ValidationError
@@ -11,6 +11,8 @@ from pydantic_core import PydanticUndefined
 # ==========================================
 # 1. CORE LOGIC: Form Rendering Engine
 # ==========================================
+
+T = TypeVar("T", bound=BaseModel)
 
 
 def _resolve_annotation(annotation):
@@ -216,7 +218,7 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "") -> Any
     return None
 
 
-def render_pydantic_form(model: type[BaseModel], form_key: str = "pydantic_form") -> BaseModel | None:
+def render_pydantic_form[T: BaseModel](model: type[T], form_key: str = "pydantic_form") -> T | None:
     """
     Generates a Streamlit form from a Pydantic model class.
 
