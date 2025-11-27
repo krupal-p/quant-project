@@ -86,6 +86,52 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
         return st.selectbox(label, options=options, index=idx, key=key, help=description)
 
     if field_origin in (list, set):
+        # Check for List[BaseModel]
+        args = get_args(resolved_type)
+        is_nested_model = False
+        if args:
+            try:
+                if issubclass(args[0], BaseModel):
+                    is_nested_model = True
+            except TypeError:
+                pass
+
+        if is_nested_model:
+            item_model = args[0]
+            st.markdown(f"**{label}**")
+            if description:
+                st.caption(description)
+
+            items = current_value if isinstance(current_value, list) else []
+
+            # Control number of items
+            num_items = st.number_input(
+                f"Count ({label})",
+                min_value=0,
+                value=len(items),
+                step=1,
+                key=f"{key}_count",
+                help=f"Adjust count and submit to update the list of {label}",
+            )
+
+            result_list = []
+            for i in range(int(num_items)):
+                item_val = items[i] if i < len(items) else None
+
+                with st.expander(f"{item_model.__name__} #{i + 1}", expanded=False):
+                    item_data = {}
+                    nested_values = item_val.model_dump() if isinstance(item_val, BaseModel) else (item_val or {})
+
+                    for name, info in item_model.model_fields.items():
+                        item_data[name] = _render_field(
+                            name,
+                            info,
+                            parent_key=f"{key}_{i}",
+                            current_value=nested_values.get(name),
+                        )
+                    result_list.append(item_data)
+            return result_list
+
         placeholder_text = "Enter comma-separated values (e.g., 1, 2, 3 or tag1, tag2)"
 
         display_value = ""
