@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
 import streamlit as st
-from pydantic import AnyUrl, BaseModel, EmailStr, Field, SecretStr, ValidationError
+from pydantic import AnyUrl, BaseModel, EmailStr, SecretStr, ValidationError
 from pydantic_core import PydanticUndefined
 
 T = TypeVar("T", bound=BaseModel)
@@ -33,7 +33,35 @@ def _resolve_annotation(annotation):
     return annotation, False
 
 
-def _render_field(field_name: str, field_info: Any, parent_key: str = "") -> Any:
+def _get_default_value(field_info: Any, current_value: Any, field_type: Any) -> Any:
+    """Helper to determine the default value for a widget."""
+    if current_value is not None:
+        return current_value
+
+    if field_info.default is not PydanticUndefined:
+        return field_info.default
+
+    # Fallbacks for types if no default is provided
+    if field_type in (int, float, Decimal):
+        constraints = field_info.json_schema_extra or {}
+        min_val = constraints.get("minimum") or constraints.get("exclusiveMinimum")
+        if min_val is not None:
+            return float(min_val) if field_type is float else int(min_val)
+        return 0 if field_type is int else 0.0
+
+    if field_type in (str, EmailStr, AnyUrl, SecretStr):
+        return ""
+
+    if field_type is bool:
+        return False
+
+    if field_type in (list, set):
+        return []
+
+    return None
+
+
+def _render_field(field_name: str, field_info: Any, parent_key: str = "", current_value: Any = None) -> Any:
     """
     Renders a single field based on its type.
     Recursive for nested Pydantic models.
@@ -44,73 +72,75 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "") -> Any
     label = field_info.title if field_info.title else field_name.replace("_", " ").title()
     description = field_info.description if field_info.description else ""
 
-    resolved_type, is_optional = _resolve_annotation(field_info.annotation)
+    resolved_type, _ = _resolve_annotation(field_info.annotation)
 
     field_origin = get_origin(resolved_type)
-    default_value = field_info.default if field_info.default is not PydanticUndefined else None
+
+    # Determine the value to display
+    default_value = _get_default_value(field_info, current_value, resolved_type)
 
     if field_origin is Literal:
         options = get_args(resolved_type)
-        return st.selectbox(label, options=options, key=key, help=description)
+        # Ensure default_value is in options, else default to first option
+        idx = options.index(default_value) if default_value in options else 0
+        return st.selectbox(label, options=options, index=idx, key=key, help=description)
 
-    if field_origin in (list, list, set, set):
+    if field_origin in (list, set):
         placeholder_text = "Enter comma-separated values (e.g., 1, 2, 3 or tag1, tag2)"
 
-        if default_value is Field:
-            default_value = ""
-        elif isinstance(default_value, (list, set)):
-            default_value = ", ".join(map(str, default_value))
+        display_value = ""
+        if isinstance(default_value, (list, set)):
+            display_value = ", ".join(map(str, default_value))
 
-        return st.text_area(
+        raw_input = st.text_area(
             label,
             key=key,
             help=f"{description} ({placeholder_text})",
-            value=default_value,
+            value=display_value,
         )
+
+        if raw_input:
+            # Return a list, Pydantic will coerce to set if needed
+            return [item.strip() for item in raw_input.split(",") if item.strip()]
+        return []
 
     if isinstance(resolved_type, type) and issubclass(resolved_type, Enum):
         options = [e.value for e in resolved_type]
-        return st.selectbox(label, options=options, key=key, help=description)
+        idx = options.index(default_value) if default_value in options else 0
+        return st.selectbox(label, options=options, index=idx, key=key, help=description)
 
     if isinstance(resolved_type, type) and issubclass(resolved_type, BaseModel):
-        st.markdown(f"### {label}")
-        if description:
-            st.caption(description)
+        # Use expander for nested models to save space
+        with st.expander(label, expanded=True):
+            if description:
+                st.caption(description)
 
-        with st.container(border=True):
             data = {}
+            # If current_value is a model instance, convert to dict to pass down
+            nested_values = (
+                current_value.model_dump() if isinstance(current_value, BaseModel) else (current_value or {})
+            )
+
             for name, info in resolved_type.model_fields.items():
-                data[name] = _render_field(name, info, parent_key=key)
+                data[name] = _render_field(name, info, parent_key=key, current_value=nested_values.get(name))
             return data
 
     field_type = resolved_type
 
     if field_type is SecretStr:
-        return st.text_input(label, type="password", key=key, help=description)
+        return st.text_input(label, type="password", value=default_value, key=key, help=description)
 
     if field_type is Decimal:
-        constraints = field_info.json_schema_extra if field_info.json_schema_extra else {}
-        min_val = constraints.get("minimum")
-        max_val = constraints.get("maximum")
-
-        if default_value is Field:
-            default_value = float(min_val) if min_val is not None else 0.0
-        else:
-            default_value = (
-                float(default_value) if default_value is not None and default_value is not PydanticUndefined else None
-            )
-
+        # Decimal handled as string input
+        val_str = str(default_value) if default_value is not None else ""
         return st.text_input(
             label,
-            value=default_value,
+            value=val_str,
             key=key,
             help=description,
         )
 
     if field_type in (str, EmailStr, AnyUrl):
-        if default_value is Field:
-            default_value = "" if not is_optional else None
-
         return st.text_input(label, key=key, help=description, value=default_value)
 
     if field_type is int or field_type is float:
@@ -119,17 +149,17 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "") -> Any
         min_val = constraints.get("minimum") or constraints.get("exclusiveMinimum")
         max_val = constraints.get("maximum") or constraints.get("exclusiveMaximum")
 
-        if default_value is Field or default_value is None or default_value is PydanticUndefined:
-            if field_type is int:
-                default_value = min_val if min_val is not None else 0
-            elif field_type is float:
-                default_value = min_val if min_val is not None else 0.0
+        # Ensure default_value respects constraints if possible
+        if min_val is not None and default_value < min_val:
+            default_value = min_val
+        if max_val is not None and default_value > max_val:
+            default_value = max_val
 
         if min_val is not None and max_val is not None:
             return st.slider(
                 label,
-                min_value=min_val,
-                max_value=max_val,
+                min_value=float(min_val) if field_type is float else int(min_val),
+                max_value=float(max_val) if field_type is float else int(max_val),
                 value=default_value,
                 step=1 if field_type is int else 0.01,
                 key=key,
@@ -150,20 +180,26 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "") -> Any
             label,
             key=key,
             help=description,
-            value=field_info.default if field_info.default is not None else False,
+            value=default_value,
         )
 
     if field_type is date:
-        default_date = field_info.default if isinstance(field_info.default, date) else None
-        return st.date_input(label, key=key, help=description, value=default_date)
+        return st.date_input(label, key=key, help=description, value=default_value)
 
     if field_type is time:
-        default_time = field_info.default if isinstance(field_info.default, time) else None
-        return st.time_input(label, key=key, help=description, value=default_time)
+        return st.time_input(label, key=key, help=description, value=default_value)
 
     if field_type is datetime:
-        d = st.date_input(f"{label} (Date)", key=f"{key}_date", help=description)
-        t = st.time_input(f"{label} (Time)", key=f"{key}_time")
+        # Handle datetime splitting
+        d_val = default_value.date() if isinstance(default_value, datetime) else None
+        t_val = default_value.time() if isinstance(default_value, datetime) else None
+
+        col1, col2 = st.columns(2)
+        with col1:
+            d = st.date_input(f"{label} (Date)", value=d_val, key=f"{key}_date", help=description)
+        with col2:
+            t = st.time_input(f"{label} (Time)", value=t_val, key=f"{key}_time")
+
         if d and t:
             return datetime.combine(d, t)
         return None
@@ -172,12 +208,17 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "") -> Any
     return None
 
 
-def render_pydantic_form[T: BaseModel](model: type[T], form_key: str = "pydantic_form") -> T | None:
+def render_pydantic_form[T: BaseModel](
+    model: type[T],
+    instance: T | None = None,
+    form_key: str = "pydantic_form",
+) -> T | None:
     """
     Generates a Streamlit form from a Pydantic model class.
 
     Args:
         model: The Pydantic model class (not an instance).
+        instance: An optional existing instance to pre-fill the form (Edit mode).
         form_key: Unique key for the st.form.
 
     Returns:
@@ -189,14 +230,23 @@ def render_pydantic_form[T: BaseModel](model: type[T], form_key: str = "pydantic
 
         form_data = {}
 
+        # If instance is provided, convert to dict for easier lookup
+        instance_data = instance.model_dump() if instance else {}
+
         for name, field_info in model.model_fields.items():
-            form_data[name] = _render_field(name, field_info, parent_key=form_key)
+            form_data[name] = _render_field(
+                name,
+                field_info,
+                parent_key=form_key,
+                current_value=instance_data.get(name),
+            )
 
         submitted = st.form_submit_button("Submit")
 
         if submitted:
             try:
-                instance = model(**form_data)
+                # Create new instance from form data
+                new_instance = model(**form_data)
                 st.success("Validation Successful!")
             except ValidationError as e:
                 st.error("Validation Error")
@@ -207,6 +257,6 @@ def render_pydantic_form[T: BaseModel](model: type[T], form_key: str = "pydantic
                     st.error(f"**{loc}**: {msg}")
                 return None
             else:
-                return instance
+                return new_instance
 
     return None
