@@ -105,14 +105,20 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
             items = current_value if isinstance(current_value, list) else []
 
             # Control number of items
-            num_items = st.number_input(
-                f"Count ({label})",
-                min_value=0,
-                value=len(items),
-                step=1,
-                key=f"{key}_count",
-                help=f"Adjust count and submit to update the list of {label}",
-            )
+            col_cnt, col_btn = st.columns([3, 1])
+            with col_cnt:
+                num_items = st.number_input(
+                    f"Count ({label})",
+                    min_value=0,
+                    value=len(items),
+                    step=1,
+                    key=f"{key}_count",
+                    help=f"Adjust count and click Update to update the list of {label}",
+                )
+            with col_btn:
+                st.write("")
+                st.write("")
+                st.form_submit_button(f"Update {label}")
 
             result_list = []
             for i in range(int(num_items)):
