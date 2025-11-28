@@ -256,8 +256,12 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
             return datetime.combine(d, t)
         return None
 
-    st.warning(f"Field '{label}' has unsupported type: {field_type}. Returning None.")
-    return None
+    return st.text_input(
+        label,
+        key=key,
+        help=description,
+        value=str(default_value) if default_value is not None else "",
+    )
 
 
 def render_pydantic_form[T: BaseModel](
