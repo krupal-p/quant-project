@@ -17,6 +17,7 @@ from typing import (
     get_origin,
 )
 
+import orjson
 import streamlit as st
 from pydantic import AnyUrl, BaseModel, EmailStr, SecretStr, ValidationError
 from pydantic.fields import FieldInfo
@@ -111,9 +112,11 @@ def _get_default_value(ctx: RenderContext, field_type: Any) -> Any:
     # Fallbacks
     match field_type:
         case _ if field_type in (int, float, Decimal):
-            constraints = ctx.field_info.json_schema_extra or {}
+            constraints = ctx.field_info.json_schema_extra
+            if not isinstance(constraints, dict):
+                constraints = {}
             min_val = constraints.get("minimum") or constraints.get("exclusiveMinimum")
-            if min_val is not None:
+            if min_val is not None and isinstance(min_val, (int, float, str)):
                 return float(min_val) if field_type is float else int(min_val)
             return 0.0 if field_type is float else 0
         case _ if field_type in (str, EmailStr, AnyUrl, SecretStr):
@@ -163,7 +166,9 @@ def render_string(ctx: RenderContext, type_: Any) -> str | SecretStr:
 
 def render_number(ctx: RenderContext, type_: Any) -> int | float | Decimal:
     default = _get_default_value(ctx, type_)
-    constraints = ctx.field_info.json_schema_extra or {}
+    constraints = ctx.field_info.json_schema_extra
+    if not isinstance(constraints, dict):
+        constraints = {}
 
     min_val = constraints.get("minimum") or constraints.get("exclusiveMinimum")
     max_val = constraints.get("maximum") or constraints.get("exclusiveMaximum")
@@ -171,8 +176,8 @@ def render_number(ctx: RenderContext, type_: Any) -> int | float | Decimal:
     step = 1 if type_ is int else 0.01
 
     # Cast constraints
-    min_v = float(min_val) if min_val is not None else None
-    max_v = float(max_val) if max_val is not None else None
+    min_v = float(min_val) if min_val is not None and isinstance(min_val, (int, float, str)) else None
+    max_v = float(max_val) if max_val is not None and isinstance(max_val, (int, float, str)) else None
 
     # Adjust default if out of bounds
     val = default
@@ -520,11 +525,11 @@ def _dispatch_base(ctx: RenderContext, type_: Any) -> Any:
 # --- Main Entry Point ---
 
 
-def render_pydantic_form[T: BaseModel](
+def render_pydantic_input[T: BaseModel](
     model: type[T],
     form_key: str = "pydantic_form",
     instance: T | None = None,
-) -> T | None:
+) -> dict:
     """
     Generates a Streamlit container from a Pydantic model class.
 
@@ -536,32 +541,49 @@ def render_pydantic_form[T: BaseModel](
     Returns:
         An instance of the model if submitted and valid, otherwise None.
     """
+    if form_key not in st.session_state:
+        st.session_state[form_key] = instance.model_dump() if instance else {}
+
     with st.container():
         st.subheader(f"{model.__name__} Form")
 
-        form_data = {}
-        instance_data = instance.model_dump() if instance else {}
+        # form_data = {}
 
         for name, info in model.model_fields.items():
             ctx = RenderContext(
                 key=f"{form_key}_{name}",
                 field_name=name,
                 field_info=info,
-                current_value=instance_data.get(name),
+                current_value=st.session_state[form_key].get(name),
             )
-            form_data[name] = dispatch_field(ctx)
+            st.session_state[form_key][name] = dispatch_field(ctx)
 
-        if st.button("Submit", key=f"{form_key}_submit", type="primary"):
-            try:
-                new_instance = model(**form_data)
-            except ValidationError as e:
-                st.error("Please correct the errors below:")
-                for error in e.errors():
-                    loc = " -> ".join(str(loc_part) for loc_part in error["loc"])
-                    st.error(f"**{loc}**: {error['msg']}")
-                return None
-            else:
-                st.success("Validation Successful!")
-                return new_instance
+    return st.session_state[form_key]
+
+
+def render_pydantic_form[T: BaseModel](
+    model: type[T],
+    form_key: str = "pydantic_form",
+    instance: T | None = None,
+    *,
+    button_kwargs: dict[str, Any] | None = None,
+) -> T | None:
+    if button_kwargs is None:
+        button_kwargs = {"label": "Submit", "type": "primary", "key": f"{form_key}_submit"}
+
+    result = render_pydantic_input(model, form_key=form_key, instance=instance)
+
+    if st.button(**button_kwargs):
+        try:
+            new_instance = model.model_validate(result)
+        except ValidationError as e:
+            st.error("Please correct the errors below:")
+            for error in e.errors():
+                fmt_str = orjson.dumps(error, option=orjson.OPT_INDENT_2).decode()
+                st.error(f"```json\n{fmt_str}\n```", icon="🚨")
+            return None
+        else:
+            st.success("Validation Successful!")
+            return new_instance
 
     return None
