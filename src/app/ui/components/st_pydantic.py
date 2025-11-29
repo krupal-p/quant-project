@@ -1,5 +1,6 @@
+import json
 import types
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
@@ -58,6 +59,9 @@ def _get_default_value(field_info: Any, current_value: Any, field_type: Any) -> 
     if field_type in (list, set):
         return []
 
+    if field_type is dict or get_origin(field_type) is dict:
+        return {}
+
     return None
 
 
@@ -72,7 +76,54 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
     label = field_info.title if field_info.title else field_name.replace("_", " ").title()
     description = field_info.description if field_info.description else ""
 
-    resolved_type, _ = _resolve_annotation(field_info.annotation)
+    resolved_type, is_optional = _resolve_annotation(field_info.annotation)
+
+    if is_optional:
+        type_label = getattr(resolved_type, "__name__", str(resolved_type))
+        options = [type_label, "None"]
+
+        default_selection = type_label
+
+        if hasattr(st, "segmented_control"):
+            selection = st.segmented_control(
+                f"{label} (Optional)",
+                options,
+                default=default_selection,
+                key=f"{key}_optional_toggle",
+            )
+        else:
+            selection = st.radio(
+                f"{label} (Optional)",
+                options,
+                index=options.index(default_selection),
+                horizontal=True,
+                key=f"{key}_optional_toggle",
+            )
+
+        if selection == "None":
+            return None
+
+        # Indent the field if it is optional and selected
+        cols = st.columns([0.05, 0.95])
+        with cols[1]:
+            return _render_field_value(field_name, field_info, parent_key, current_value, resolved_type)
+
+    return _render_field_value(field_name, field_info, parent_key, current_value, resolved_type)
+
+
+def _render_field_value(
+    field_name: str,
+    field_info: Any,
+    parent_key: str,
+    current_value: Any,
+    resolved_type: Any,
+) -> Any:
+    """
+    Renders the actual input widget for a field, assuming it is not None.
+    """
+    key = f"{parent_key}_{field_name}"
+    label = field_info.title if field_info.title else field_name.replace("_", " ").title()
+    description = field_info.description if field_info.description else ""
 
     field_origin = get_origin(resolved_type)
 
@@ -105,7 +156,7 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
             items = current_value if isinstance(current_value, list) else []
 
             # Control number of items
-            col_cnt, col_btn = st.columns([3, 1])
+            col_cnt, _ = st.columns([3, 1])
             with col_cnt:
                 num_items = st.number_input(
                     f"Count ({label})",
@@ -115,10 +166,6 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
                     key=f"{key}_count",
                     help=f"Adjust count and click Update to update the list of {label}",
                 )
-            with col_btn:
-                st.write("")
-                st.write("")
-                st.form_submit_button(f"Update {label}")
 
             result_list = []
             for i in range(int(num_items)):
@@ -155,6 +202,32 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
             # Return a list, Pydantic will coerce to set if needed
             return [item.strip() for item in raw_input.split(",") if item.strip()]
         return []
+
+    if field_origin is dict or resolved_type is dict:
+        display_value = ""
+        if isinstance(default_value, dict):
+            display_value = json.dumps(default_value, indent=2)
+        elif default_value is None:
+            display_value = "{}"
+
+        raw_input = st.text_area(
+            label,
+            key=key,
+            help=f"{description} (Enter JSON dictionary)",
+            value=display_value,
+        )
+
+        if raw_input:
+            try:
+                parsed = json.loads(raw_input)
+                if not isinstance(parsed, dict):
+                    st.warning(f"Input for {label} must be a JSON object (dictionary).")
+                    return parsed
+                return parsed
+            except json.JSONDecodeError as e:
+                st.error(f"Invalid JSON for {label}: {e}")
+                return None
+        return {}
 
     if isinstance(resolved_type, type) and issubclass(resolved_type, Enum):
         options = [e.value for e in resolved_type]
@@ -228,7 +301,7 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
         )
 
     if field_type is bool:
-        return st.checkbox(
+        return st.toggle(
             label,
             key=key,
             help=description,
@@ -255,6 +328,16 @@ def _render_field(field_name: str, field_info: Any, parent_key: str = "", curren
         if d and t:
             return datetime.combine(d, t)
         return None
+    if field_type is timedelta:
+        #         str; the following formats are accepted:
+        # [-][DD ][HH:MM]SS[.ffffff]
+        # [±]P[DD]DT[HH]H[MM]M[SS]S (ISO 8601 format for timedelta)
+        return st.text_input(
+            label,
+            key=key,
+            help='Example ISO 8601 format: "P3DT4H5M6S" for 3 days, 4 hours, 5 minutes, and 6 seconds',
+            value=str(default_value) if default_value is not None else "",
+        )
 
     return st.text_input(
         label,
@@ -270,18 +353,18 @@ def render_pydantic_form[T: BaseModel](
     form_key: str = "pydantic_form",
 ) -> T | None:
     """
-    Generates a Streamlit form from a Pydantic model class.
+    Generates a Streamlit container from a Pydantic model class.
 
     Args:
         model: The Pydantic model class (not an instance).
         instance: An optional existing instance to pre-fill the form (Edit mode).
-        form_key: Unique key for the st.form.
+        form_key: Unique key for the widgets.
 
     Returns:
         An instance of the model if submitted and valid, otherwise None.
     """
 
-    with st.form(key=form_key):
+    with st.container():
         st.subheader(f"{model.__name__} Form")
 
         form_data = {}
@@ -297,7 +380,7 @@ def render_pydantic_form[T: BaseModel](
                 current_value=instance_data.get(name),
             )
 
-        submitted = st.form_submit_button("Submit")
+        submitted = st.button("Submit", key=f"{form_key}_submit")
 
         if submitted:
             try:
