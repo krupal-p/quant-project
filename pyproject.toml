@@ -19,7 +19,7 @@ dependencies = [
     "prefect-dbt>=0.7.1",
     "psycopg[binary]>=3.2.9",
     "pyarrow>=20.0.0",
-    "pydantic>=2.11.5",
+    "pydantic[email]>=2.11.5",
     "pydantic-settings>=2.9.1",
     "scipy>=1.15.3",
     "skfolio>=0.9.1",
@@ -35,6 +35,7 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-xdist>=3.8.0",
     "ruff>=0.12.5",
+    "ty>=0.0.1a27",
     "watchdog>=6.0.0",
 ]
 
