@@ -1,5 +1,6 @@
 import json
 import types
+import uuid
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
@@ -155,23 +156,40 @@ def _render_field_value(
 
             items = current_value if isinstance(current_value, list) else []
 
-            # Control number of items
-            col_cnt, _ = st.columns([3, 1])
-            with col_cnt:
-                num_items = st.number_input(
-                    f"Count ({label})",
-                    min_value=0,
-                    value=len(items),
-                    step=1,
-                    key=f"{key}_count",
-                    help=f"Adjust count and click Update to update the list of {label}",
-                )
+            # Session state for item IDs and initial values
+            ids_key = f"{key}_item_ids"
+            values_key = f"{key}_initial_values"
+
+            if ids_key not in st.session_state:
+                # Initialize with existing items
+                initial_ids = [str(uuid.uuid4()) for _ in items]
+                st.session_state[ids_key] = initial_ids
+                st.session_state[values_key] = dict(zip(initial_ids, items, strict=False))
+
+            item_ids = st.session_state[ids_key]
+            initial_values = st.session_state[values_key]
+
+            # Add Button
+            if st.button(f"Add {item_model.__name__}", key=f"{key}_add"):
+                new_id = str(uuid.uuid4())
+                st.session_state[ids_key].append(new_id)
+                st.session_state[values_key][new_id] = None
+                st.rerun()
 
             result_list = []
-            for i in range(int(num_items)):
-                item_val = items[i] if i < len(items) else None
+            ids_to_remove = []
 
-                with st.expander(f"{item_model.__name__} #{i + 1}", expanded=False):
+            for i, item_id in enumerate(item_ids):
+                item_val = initial_values.get(item_id)
+
+                col_exp_1, col_exp_2 = st.columns([0.90, 0.10])
+                with col_exp_2:
+                    if st.button(":material/delete:", key=f"{key}_{item_id}_remove"):
+                        ids_to_remove.append(item_id)
+
+                with col_exp_1, st.expander(f"{item_model.__name__} #{i + 1}", expanded=True):
+                    # Remove button for this item
+
                     item_data = {}
                     nested_values = item_val.model_dump() if isinstance(item_val, BaseModel) else (item_val or {})
 
@@ -179,10 +197,20 @@ def _render_field_value(
                         item_data[name] = _render_field(
                             name,
                             info,
-                            parent_key=f"{key}_{i}",
+                            parent_key=f"{key}_{item_id}",
                             current_value=nested_values.get(name),
                         )
                     result_list.append(item_data)
+
+            if ids_to_remove:
+                for item_id in ids_to_remove:
+                    if item_id in st.session_state[ids_key]:
+                        st.session_state[ids_key].remove(item_id)
+                        # Clean up initial value map
+                        if item_id in st.session_state[values_key]:
+                            del st.session_state[values_key][item_id]
+                st.rerun()
+
             return result_list
 
         placeholder_text = "Enter comma-separated values (e.g., 1, 2, 3 or tag1, tag2)"
