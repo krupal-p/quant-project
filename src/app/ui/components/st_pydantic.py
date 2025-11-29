@@ -137,7 +137,7 @@ def render_bool(ctx: RenderContext, _: Any) -> bool:
         ctx.label,
         value=bool(default),
         key=ctx.key,
-        help=ctx.description,
+        help=ctx.description or "Toggle value",
     )
 
 
@@ -149,7 +149,7 @@ def render_string(ctx: RenderContext, type_: Any) -> str | SecretStr:
             value=str(default),
             type="password",
             key=ctx.key,
-            help=ctx.description,
+            help=ctx.description or "Enter secret value",
         )
         return SecretStr(val) if val else SecretStr("")
 
@@ -157,7 +157,7 @@ def render_string(ctx: RenderContext, type_: Any) -> str | SecretStr:
         ctx.label,
         value=str(default),
         key=ctx.key,
-        help=ctx.description,
+        help=ctx.description or "Enter text",
     )
 
 
@@ -189,7 +189,7 @@ def render_number(ctx: RenderContext, type_: Any) -> int | float | Decimal:
             value=int(val) if type_ is int else float(val),
             step=step,
             key=ctx.key,
-            help=ctx.description,
+            help=ctx.description or "Select value",
         )
     else:
         result = st.number_input(
@@ -197,7 +197,7 @@ def render_number(ctx: RenderContext, type_: Any) -> int | float | Decimal:
             value=int(val) if type_ is int else float(val),
             step=step,
             key=ctx.key,
-            help=ctx.description,
+            help=ctx.description or "Enter number",
         )
 
     if type_ is Decimal:
@@ -214,7 +214,7 @@ def render_enum(ctx: RenderContext, type_: type[Enum]) -> Any:
         options=options,
         index=idx,
         key=ctx.key,
-        help=ctx.description,
+        help=ctx.description or "Select an option",
     )
 
 
@@ -227,7 +227,7 @@ def render_literal(ctx: RenderContext, type_: Any) -> Any:
         options=options,
         index=idx,
         key=ctx.key,
-        help=ctx.description,
+        help=ctx.description or "Select an option",
     )
 
 
@@ -239,7 +239,7 @@ def render_datetime(ctx: RenderContext, type_: Any) -> datetime | date | time | 
             ctx.label,
             value=default,
             key=ctx.key,
-            help=ctx.description,
+            help=ctx.description or "Select date",
         )
 
     if type_ is time:
@@ -247,7 +247,7 @@ def render_datetime(ctx: RenderContext, type_: Any) -> datetime | date | time | 
             ctx.label,
             value=default,
             key=ctx.key,
-            help=ctx.description,
+            help=ctx.description or "Select time",
         )
 
     if type_ is datetime:
@@ -260,10 +260,10 @@ def render_datetime(ctx: RenderContext, type_: Any) -> datetime | date | time | 
                 f"{ctx.label} (Date)",
                 value=d_val,
                 key=f"{ctx.key}_date",
-                help=ctx.description,
+                help=ctx.description or "Select date",
             )
         with c2:
-            t = st.time_input(f"{ctx.label} (Time)", value=t_val, key=f"{ctx.key}_time")
+            t = st.time_input(f"{ctx.label} (Time)", value=t_val, key=f"{ctx.key}_time", help="Select time")
 
         if d and t:
             return datetime.combine(d, t)
@@ -279,19 +279,70 @@ def render_list(ctx: RenderContext, type_: Any) -> list[Any]:
     if isinstance(item_type, type) and issubclass(item_type, BaseModel):
         return _render_model_list(ctx, item_type)
 
-    # Simple list (strings, ints, etc) - use text area for now as per original
-    default = _get_default_value(ctx, type_)
-    display_val = ", ".join(map(str, default)) if isinstance(default, (list, set)) else ""
+    return _render_primitive_list(ctx, item_type)
 
-    val = st.text_area(
-        ctx.label,
-        value=display_val,
-        key=ctx.key,
-        help=f"{ctx.description} (Comma-separated values)",
-    )
-    if val:
-        return [item.strip() for item in val.split(",") if item.strip()]
-    return []
+
+def _render_primitive_list(ctx: RenderContext, item_type: Any) -> list[Any]:
+    st.markdown(f"**{ctx.label}**")
+    if ctx.description:
+        st.caption(ctx.description)
+
+    items = ctx.current_value if isinstance(ctx.current_value, list) else []
+
+    # State management
+    ids_key = f"{ctx.key}_ids"
+    vals_key = f"{ctx.key}_values"
+
+    if ids_key not in st.session_state:
+        initial_ids = [str(uuid.uuid4()) for _ in items]
+        st.session_state[ids_key] = initial_ids
+        st.session_state[vals_key] = dict(zip(initial_ids, items, strict=False))
+
+    item_ids = st.session_state[ids_key]
+    initial_values = st.session_state[vals_key]
+
+    if st.button("Add Item", key=f"{ctx.key}_add"):
+        new_id = str(uuid.uuid4())
+        st.session_state[ids_key].append(new_id)
+
+        # Get default for primitive
+        dummy_ctx = RenderContext("", "", FieldInfo(), None)
+        st.session_state[vals_key][new_id] = _get_default_value(dummy_ctx, item_type)
+        st.rerun()
+
+    results = []
+    to_remove = []
+
+    for i, item_id in enumerate(item_ids):
+        val = initial_values.get(item_id)
+
+        c1, c2 = st.columns([0.9, 0.1])
+        with c2:
+            if st.button(":material/delete:", key=f"{ctx.key}_{item_id}_del", help="Remove item"):
+                to_remove.append(item_id)
+
+        with c1:
+            # Create sub-context for the primitive item
+            sub_ctx = ctx.sub_context(
+                f"Item {i + 1}",
+                FieldInfo(annotation=item_type),
+                val,
+                key=f"{ctx.key}_{item_id}",
+            )
+            # Render
+            new_val = dispatch_field(sub_ctx)
+            results.append(new_val)
+            st.session_state[vals_key][item_id] = new_val
+
+    if to_remove:
+        for mid in to_remove:
+            if mid in st.session_state[ids_key]:
+                st.session_state[ids_key].remove(mid)
+                if mid in st.session_state[vals_key]:
+                    del st.session_state[vals_key][mid]
+        st.rerun()
+
+    return results
 
 
 def _render_model_list(
@@ -368,7 +419,7 @@ def render_dict(ctx: RenderContext, _: Any) -> dict:
         ctx.label,
         value=display_val,
         key=ctx.key,
-        help=f"{ctx.description} (JSON)",
+        help=f"{ctx.description} (JSON)" if ctx.description else "Enter JSON object",
     )
 
     if val:
@@ -395,42 +446,26 @@ def render_nested_model(ctx: RenderContext, model_type: type[BaseModel]) -> dict
         return data
 
 
-# --- Dispatcher ---
-
-
 def dispatch_field(ctx: RenderContext) -> Any:
     """Dispatches rendering to the appropriate function based on type."""
     base_type, is_optional = _resolve_type(ctx.field_info.annotation)
 
     # Handle Optional wrapper
     if is_optional:
-        type_name = getattr(base_type, "__name__", str(base_type))
-        opt_key = f"{ctx.key}_opt"
+        # Use a checkbox to toggle presence
+        is_checked = ctx.current_value is not None
 
-        # Use segmented control if available (Streamlit 1.38+)
-        options = [type_name, "None"]
-        if hasattr(st, "segmented_control"):
-            sel = st.segmented_control(
-                f"{ctx.label} (Optional)",
-                options,
-                default=type_name,
-                key=opt_key,
-            )
-        else:
-            sel = st.radio(
-                f"{ctx.label} (Optional)",
-                options,
-                horizontal=True,
-                key=opt_key,
-            )
+        enable = st.checkbox(
+            f"Include {ctx.label}",
+            value=is_checked,
+            key=f"{ctx.key}_opt_check",
+            help=f"Enable {ctx.label}",
+        )
 
-        if sel == "None":
+        if not enable:
             return None
 
-        # Render actual field
-        cols = st.columns([0.05, 0.95])
-        with cols[1]:
-            return _dispatch_base(ctx, base_type)
+        return _dispatch_base(ctx, base_type)
 
     return _dispatch_base(ctx, base_type)
 
@@ -446,7 +481,7 @@ def _dispatch_base(ctx: RenderContext, type_: Any) -> Any:
     match type_:
         case _ if origin is Literal:
             return render_literal(ctx, type_)
-        case _ if origin in (list, set):
+        case _ if origin in (list, set, tuple):
             return render_list(ctx, type_)
         case _ if origin is dict or type_ is dict:
             return render_dict(ctx, type_)
@@ -478,7 +513,7 @@ def _dispatch_base(ctx: RenderContext, type_: Any) -> Any:
             return st.text_input(
                 ctx.label,
                 key=ctx.key,
-                help=f"Unsupported type: {type_}",
+                help=ctx.description or "Enter value",
             )
 
 
@@ -516,11 +551,11 @@ def render_pydantic_form[T: BaseModel](
             )
             form_data[name] = dispatch_field(ctx)
 
-        if st.button("Submit", key=f"{form_key}_submit"):
+        if st.button("Submit", key=f"{form_key}_submit", type="primary"):
             try:
                 new_instance = model(**form_data)
             except ValidationError as e:
-                st.error("Validation Error")
+                st.error("Please correct the errors below:")
                 for error in e.errors():
                     loc = " -> ".join(str(loc_part) for loc_part in error["loc"])
                     st.error(f"**{loc}**: {error['msg']}")
