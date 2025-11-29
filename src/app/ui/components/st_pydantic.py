@@ -487,16 +487,16 @@ def _dispatch_base(ctx: RenderContext, type_: Any) -> Any:
 
 def render_pydantic_form[T: BaseModel](
     model: type[T],
-    instance: T | None = None,
     form_key: str = "pydantic_form",
+    instance: T | None = None,
 ) -> T | None:
     """
     Generates a Streamlit container from a Pydantic model class.
 
     Args:
         model: The Pydantic model class (not an instance).
-        instance: An optional existing instance to pre-fill the form (Edit mode).
         form_key: Unique key for the widgets.
+        instance: An optional existing instance to pre-fill the form (Edit mode).
 
     Returns:
         An instance of the model if submitted and valid, otherwise None.
