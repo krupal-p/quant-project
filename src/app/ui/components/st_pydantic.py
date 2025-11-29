@@ -35,6 +35,7 @@ class RenderContext:
     field_info: FieldInfo
     current_value: Any
     parent_key: str = ""
+    form_key: str = ""
 
     @property
     def label(self) -> str:
@@ -58,6 +59,7 @@ class RenderContext:
             field_info=info,
             current_value=value,
             parent_key=self.key,
+            form_key=self.form_key,
         )
 
 
@@ -295,24 +297,28 @@ def _render_primitive_list(ctx: RenderContext, item_type: Any) -> list[Any]:
     items = ctx.current_value if isinstance(ctx.current_value, list) else []
 
     # State management
-    ids_key = f"{ctx.key}_ids"
-    vals_key = f"{ctx.key}_values"
+    meta = st.session_state[ctx.form_key].setdefault("meta", {})
 
-    if ids_key not in st.session_state:
+    if ctx.key not in meta:
+        meta[ctx.key] = {}
+
+    list_state = meta[ctx.key]
+
+    if "ids" not in list_state:
         initial_ids = [str(uuid.uuid4()) for _ in items]
-        st.session_state[ids_key] = initial_ids
-        st.session_state[vals_key] = dict(zip(initial_ids, items, strict=False))
+        list_state["ids"] = initial_ids
+        list_state["values"] = dict(zip(initial_ids, items, strict=False))
 
-    item_ids = st.session_state[ids_key]
-    initial_values = st.session_state[vals_key]
+    item_ids = list_state["ids"]
+    initial_values = list_state["values"]
 
     if st.button("Add Item", key=f"{ctx.key}_add"):
         new_id = str(uuid.uuid4())
-        st.session_state[ids_key].append(new_id)
+        list_state["ids"].append(new_id)
 
         # Get default for primitive
-        dummy_ctx = RenderContext("", "", FieldInfo(), None)
-        st.session_state[vals_key][new_id] = _get_default_value(dummy_ctx, item_type)
+        dummy_ctx = RenderContext("", "", FieldInfo(), None, form_key=ctx.form_key)
+        list_state["values"][new_id] = _get_default_value(dummy_ctx, item_type)
         st.rerun()
 
     results = []
@@ -337,14 +343,14 @@ def _render_primitive_list(ctx: RenderContext, item_type: Any) -> list[Any]:
             # Render
             new_val = dispatch_field(sub_ctx)
             results.append(new_val)
-            st.session_state[vals_key][item_id] = new_val
+            list_state["values"][item_id] = new_val
 
     if to_remove:
         for mid in to_remove:
-            if mid in st.session_state[ids_key]:
-                st.session_state[ids_key].remove(mid)
-                if mid in st.session_state[vals_key]:
-                    del st.session_state[vals_key][mid]
+            if mid in list_state["ids"]:
+                list_state["ids"].remove(mid)
+                if mid in list_state["values"]:
+                    del list_state["values"][mid]
         st.rerun()
 
     return results
@@ -361,21 +367,25 @@ def _render_model_list(
     items = ctx.current_value if isinstance(ctx.current_value, list) else []
 
     # State management
-    ids_key = f"{ctx.key}_ids"
-    vals_key = f"{ctx.key}_values"
+    meta = st.session_state[ctx.form_key].setdefault("meta", {})
 
-    if ids_key not in st.session_state:
+    if ctx.key not in meta:
+        meta[ctx.key] = {}
+
+    list_state = meta[ctx.key]
+
+    if "ids" not in list_state:
         initial_ids = [str(uuid.uuid4()) for _ in items]
-        st.session_state[ids_key] = initial_ids
-        st.session_state[vals_key] = dict(zip(initial_ids, items, strict=False))
+        list_state["ids"] = initial_ids
+        list_state["values"] = dict(zip(initial_ids, items, strict=False))
 
-    item_ids = st.session_state[ids_key]
-    initial_values = st.session_state[vals_key]
+    item_ids = list_state["ids"]
+    initial_values = list_state["values"]
 
     if st.button(f"Add {item_model.__name__}", key=f"{ctx.key}_add"):
         new_id = str(uuid.uuid4())
-        st.session_state[ids_key].append(new_id)
-        st.session_state[vals_key][new_id] = None
+        list_state["ids"].append(new_id)
+        list_state["values"][new_id] = None
         st.rerun()
 
     results = []
@@ -407,10 +417,10 @@ def _render_model_list(
 
     if to_remove:
         for mid in to_remove:
-            if mid in st.session_state[ids_key]:
-                st.session_state[ids_key].remove(mid)
-                if mid in st.session_state[vals_key]:
-                    del st.session_state[vals_key][mid]
+            if mid in list_state["ids"]:
+                list_state["ids"].remove(mid)
+                if mid in list_state["values"]:
+                    del list_state["values"][mid]
         st.rerun()
 
     return results
@@ -542,7 +552,20 @@ def render_pydantic_input[T: BaseModel](
         An instance of the model if submitted and valid, otherwise None.
     """
     if form_key not in st.session_state:
-        st.session_state[form_key] = instance.model_dump() if instance else {}
+        st.session_state[form_key] = {
+            "data": instance.model_dump() if instance else {},
+            "meta": {},
+        }
+
+    # Ensure structure
+    if not isinstance(st.session_state[form_key], dict) or "data" not in st.session_state[form_key]:
+        # Fallback if state was initialized differently (e.g. old version)
+        # We wrap it.
+        old_data = st.session_state[form_key]
+        st.session_state[form_key] = {
+            "data": old_data if isinstance(old_data, dict) else {},
+            "meta": {},
+        }
 
     with st.container():
         st.subheader(f"{model.__name__} Form")
@@ -554,11 +577,12 @@ def render_pydantic_input[T: BaseModel](
                 key=f"{form_key}_{name}",
                 field_name=name,
                 field_info=info,
-                current_value=st.session_state[form_key].get(name),
+                current_value=st.session_state[form_key]["data"].get(name),
+                form_key=form_key,
             )
-            st.session_state[form_key][name] = dispatch_field(ctx)
+            st.session_state[form_key]["data"][name] = dispatch_field(ctx)
 
-    return st.session_state[form_key]
+    return st.session_state[form_key]["data"]
 
 
 def render_pydantic_form[T: BaseModel](
