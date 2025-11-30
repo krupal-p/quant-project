@@ -19,7 +19,7 @@ from typing import (
 
 import orjson
 import streamlit as st
-from pydantic import AnyUrl, BaseModel, EmailStr, SecretStr, ValidationError
+from pydantic import AnyUrl, BaseModel, EmailStr, SecretStr, TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
@@ -662,6 +662,8 @@ def render_pydantic_input[T: BaseModel](
     model: type[T],
     form_key: str = "pydantic_form",
     instance: T | None = None,
+    *,
+    container_kwargs: dict[str, Any] | None = None,
 ) -> dict:
     """
     Generates a Streamlit container from a Pydantic model class.
@@ -690,7 +692,7 @@ def render_pydantic_input[T: BaseModel](
             "meta": {},
         }
 
-    with st.container():
+    with st.container(**(container_kwargs or {})):
         st.subheader(f"{model.__name__} Form")
 
         # form_data = {}
@@ -713,12 +715,14 @@ def render_pydantic_form[T: BaseModel](
     form_key: str = "pydantic_form",
     instance: T | None = None,
     *,
+    container_kwargs: dict[str, Any] | None = None,
     button_kwargs: dict[str, Any] | None = None,
 ) -> T | None:
     if button_kwargs is None:
         button_kwargs = {"label": "Submit", "type": "primary", "key": f"{form_key}_submit"}
 
-    result = render_pydantic_input(model, form_key=form_key, instance=instance)
+    result = render_pydantic_input(model, form_key=form_key, instance=instance, container_kwargs=container_kwargs)
+    st.json(TypeAdapter(dict[str, Any]).dump_json(result).decode(), expanded=True)
 
     if st.button(**button_kwargs):
         try:
