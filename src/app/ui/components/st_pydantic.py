@@ -349,7 +349,7 @@ def _render_primitive_list(ctx: RenderContext, item_type: Any) -> list[Any]:
     item_ids = list_state["ids"]
     initial_values = list_state["values"]
 
-    if st.button(f"{ctx.label}", key=f"{ctx.key}_add"):
+    if st.button(f"Add {ctx.label}", key=f"{ctx.key}_add"):
         new_id = str(uuid.uuid4())
         list_state["ids"].append(new_id)
 
@@ -365,10 +365,6 @@ def _render_primitive_list(ctx: RenderContext, item_type: Any) -> list[Any]:
         val = initial_values.get(item_id)
 
         c1, c2 = st.columns([0.9, 0.1])
-        with c2:
-            if st.button(":material/delete:", key=f"{ctx.key}_{item_id}_del", help="Remove item"):
-                to_remove.append(item_id)
-
         with c1:
             # Create sub-context for the primitive item
             sub_ctx = ctx.sub_context(
@@ -381,6 +377,10 @@ def _render_primitive_list(ctx: RenderContext, item_type: Any) -> list[Any]:
             new_val = dispatch_field(sub_ctx)
             results.append(new_val)
             list_state["values"][item_id] = new_val
+
+        with c2:
+            if st.button(":material/delete:", key=f"{ctx.key}_{item_id}_del", help="Remove item"):
+                to_remove.append(item_id)
 
     if to_remove:
         for mid in to_remove:
@@ -679,16 +679,6 @@ def render_pydantic_input[T: BaseModel](
     if form_key not in st.session_state:
         st.session_state[form_key] = {
             "data": instance.model_dump() if instance else {},
-            "meta": {},
-        }
-
-    # Ensure structure
-    if not isinstance(st.session_state[form_key], dict) or "data" not in st.session_state[form_key]:
-        # Fallback if state was initialized differently (e.g. old version)
-        # We wrap it.
-        old_data = st.session_state[form_key]
-        st.session_state[form_key] = {
-            "data": old_data if isinstance(old_data, dict) else {},
             "meta": {},
         }
 
