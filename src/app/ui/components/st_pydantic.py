@@ -463,7 +463,7 @@ def _render_model_list(
     return results
 
 
-def render_dict(ctx: RenderContext, _: Any) -> dict:
+def _render_json_dict(ctx: RenderContext, _: Any) -> dict:
     default = _get_default_value(ctx, dict)
     display_val = json.dumps(default, indent=2) if isinstance(default, dict) else "{}"
 
@@ -480,6 +480,103 @@ def render_dict(ctx: RenderContext, _: Any) -> dict:
         except json.JSONDecodeError:
             st.error(f"Invalid JSON for {ctx.label}")
     return {}
+
+
+def render_dict(ctx: RenderContext, type_: Any) -> dict:
+    args = get_args(type_)
+    if not args or len(args) != 2:
+        return _render_json_dict(ctx, type_)
+
+    key_type, value_type = args
+
+    st.markdown(f"**{ctx.label}**")
+    if ctx.description:
+        st.caption(ctx.description)
+
+    # State management
+    meta = st.session_state[ctx.form_key].setdefault("meta", {})
+    if ctx.key not in meta:
+        meta[ctx.key] = {}
+
+    dict_state = meta[ctx.key]
+
+    current_val = ctx.current_value if isinstance(ctx.current_value, dict) else {}
+
+    if "ids" not in dict_state:
+        initial_ids = [str(uuid.uuid4()) for _ in current_val]
+        dict_state["ids"] = initial_ids
+        dict_state["rows"] = {}
+        for (k, v), row_id in zip(current_val.items(), initial_ids, strict=False):
+            dict_state["rows"][row_id] = {"key": k, "value": v}
+
+    row_ids = dict_state["ids"]
+    rows = dict_state["rows"]
+
+    if st.button(f"Add {ctx.label}", key=f"{ctx.key}_add"):
+        new_id = str(uuid.uuid4())
+        dict_state["ids"].append(new_id)
+
+        # Defaults
+        dummy_ctx = RenderContext("", "", FieldInfo(), None, form_key=ctx.form_key)
+        k_default = _get_default_value(dummy_ctx, key_type)
+        v_default = _get_default_value(dummy_ctx, value_type)
+
+        dict_state["rows"][new_id] = {"key": k_default, "value": v_default}
+        st.rerun()
+
+    to_remove = []
+
+    for _, row_id in enumerate(row_ids):
+        row_data = rows.get(row_id)
+        if not row_data:
+            continue
+
+        c1, c2, c3 = st.columns([0.4, 0.5, 0.1])
+
+        with c1:
+            k_ctx = ctx.sub_context(
+                "Key",
+                FieldInfo(annotation=key_type),
+                row_data["key"],
+                key=f"{ctx.key}_{row_id}_key",
+            )
+            new_key = dispatch_field(k_ctx)
+            rows[row_id]["key"] = new_key
+
+        with c2:
+            v_ctx = ctx.sub_context(
+                "Value",
+                FieldInfo(annotation=value_type),
+                row_data["value"],
+                key=f"{ctx.key}_{row_id}_value",
+            )
+            new_val = dispatch_field(v_ctx)
+            rows[row_id]["value"] = new_val
+
+        with c3:
+            if st.button(":material/delete:", key=f"{ctx.key}_{row_id}_del"):
+                to_remove.append(row_id)
+
+    if to_remove:
+        for mid in to_remove:
+            if mid in dict_state["ids"]:
+                dict_state["ids"].remove(mid)
+                if mid in dict_state["rows"]:
+                    del dict_state["rows"][mid]
+        st.rerun()
+
+    final_dict = {}
+    for row_id in row_ids:
+        row = rows[row_id]
+        k = row["key"]
+        v = row["value"]
+        try:
+            hash(k)
+            final_dict[k] = v
+        except TypeError:
+            pass
+
+    return final_dict
 
 
 def render_nested_model(ctx: RenderContext, model_type: type[BaseModel]) -> dict:
