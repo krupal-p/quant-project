@@ -97,8 +97,10 @@ def _resolve_type(annotation: Any) -> tuple[Any, bool]:
             base, _ = _resolve_type(non_none_args[0])
             return base, True
         # Union[A, B, None] -> Union[A, B]
-        # For now, we don't fully support complex Unions, just return the Union type marked optional
-        return annotation, True
+        union_type: Any = non_none_args[0]
+        for candidate in non_none_args[1:]:
+            union_type = union_type | candidate
+        return union_type, True
 
     return annotation, False
 
@@ -464,7 +466,7 @@ def render_nested_model(ctx: RenderContext, model_type: type[BaseModel]) -> dict
 def render_union(ctx: RenderContext, type_: Any) -> Any:
     args = get_args(type_)
     # Filter out NoneType
-    options = list(args)
+    options = [arg for arg in args if arg is not type(None)]
 
     if not options:
         return None
