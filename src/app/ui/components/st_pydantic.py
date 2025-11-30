@@ -461,6 +461,89 @@ def render_nested_model(ctx: RenderContext, model_type: type[BaseModel]) -> dict
         return data
 
 
+def render_union(ctx: RenderContext, type_: Any) -> Any:
+    args = get_args(type_)
+    # Filter out NoneType
+    options = list(args)
+
+    if not options:
+        return None
+
+    # Map types to labels
+    type_map = {}
+    for arg in options:
+        origin = get_origin(arg)
+        if origin is list:
+            inner_args = get_args(arg)
+            if inner_args:
+                inner_type = inner_args[0]
+                inner_name = inner_type.__name__ if isinstance(inner_type, type) else str(inner_type)
+                label = f"list[{inner_name}]"
+            else:
+                label = "list"
+        elif isinstance(arg, type):
+            label = arg.__name__
+        else:
+            label = str(arg)
+        type_map[label] = arg
+
+    type_labels = list(type_map.keys())
+    selector_key = f"{ctx.key}_type_selector"
+
+    # Determine current type index
+    current_type_idx = 0
+
+    # Priority: Widget State > Data Inference
+    if selector_key in st.session_state and st.session_state[selector_key] in type_labels:
+        current_type_idx = type_labels.index(st.session_state[selector_key])
+    elif ctx.current_value is not None:
+        for i, (_, t) in enumerate(type_map.items()):
+            # Check for Pydantic models
+            if isinstance(t, type) and issubclass(t, BaseModel):
+                if isinstance(ctx.current_value, (dict, t)):
+                    current_type_idx = i
+                    break
+            # Check for primitives
+            elif isinstance(t, type) and isinstance(ctx.current_value, t):
+                current_type_idx = i
+                break
+
+    selected_label = st.segmented_control(
+        f"Type for {ctx.label}",
+        options=type_labels,
+        default=type_labels[current_type_idx],
+        key=selector_key,
+        help=f"Select type for {ctx.label}",
+    )
+
+    if selected_label is None:
+        selected_label = type_labels[current_type_idx]
+
+    selected_type = type_map[selected_label]
+
+    # Check compatibility of current value
+    compatible_value = ctx.current_value
+    is_compatible = False
+    if compatible_value is not None:
+        if isinstance(selected_type, type) and issubclass(selected_type, BaseModel):
+            if isinstance(compatible_value, (dict, selected_type)):
+                is_compatible = True
+        elif isinstance(selected_type, type) and isinstance(compatible_value, selected_type):
+            is_compatible = True
+
+    if not is_compatible:
+        compatible_value = None
+
+    sub_ctx = ctx.sub_context(
+        ctx.field_name,
+        FieldInfo(annotation=selected_type),
+        compatible_value,
+        key=f"{ctx.key}_{selected_label}",
+    )
+
+    return dispatch_field(sub_ctx)
+
+
 def dispatch_field(ctx: RenderContext) -> Any:
     """Dispatches rendering to the appropriate function based on type."""
     base_type, is_optional = _resolve_type(ctx.field_info.annotation)
@@ -496,6 +579,8 @@ def _dispatch_base(ctx: RenderContext, type_: Any) -> Any:
     match type_:
         case _ if origin is Literal:
             return render_literal(ctx, type_)
+        case _ if origin is Union or (hasattr(types, "UnionType") and origin is types.UnionType):
+            return render_union(ctx, type_)
         case _ if origin in (list, set, tuple):
             return render_list(ctx, type_)
         case _ if origin is dict or type_ is dict:
