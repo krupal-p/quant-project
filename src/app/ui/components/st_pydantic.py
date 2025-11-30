@@ -82,6 +82,10 @@ def _resolve_type(annotation: Any) -> tuple[Any, bool]:
     Handles Annotated, Union, Optional.
     Returns (base_type, is_optional)
     """
+    # Handle TypeAliasType (Python 3.12+)
+    if hasattr(annotation, "__value__") and type(annotation).__name__ == "TypeAliasType":
+        return _resolve_type(annotation.__value__)
+
     origin = get_origin(annotation)
     args = get_args(annotation)
 
@@ -112,6 +116,8 @@ def _get_default_value(ctx: RenderContext, field_type: Any) -> Any:
 
     if ctx.field_info.default is not PydanticUndefined:
         return ctx.field_info.default
+
+    field_type, _ = _resolve_type(field_type)
 
     # Fallbacks
     match field_type:
@@ -280,13 +286,42 @@ def render_datetime(ctx: RenderContext, type_: Any) -> datetime | date | time | 
     return None
 
 
+def _render_multiselect(ctx: RenderContext, item_type: Any) -> list[Any]:
+    options = []
+    if isinstance(item_type, type) and issubclass(item_type, Enum):
+        options = [e.value for e in item_type]
+    elif get_origin(item_type) is Literal:
+        options = list(get_args(item_type))
+
+    current = ctx.current_value if isinstance(ctx.current_value, list) else []
+    # Filter default values to ensure they are in options
+    default = [x for x in current if x in options]
+
+    return st.multiselect(
+        ctx.label,
+        options=options,
+        default=default,
+        key=ctx.key,
+        help=ctx.description or "Select options",
+    )
+
+
 def render_list(ctx: RenderContext, type_: Any) -> list[Any]:
     args = get_args(type_)
     item_type = args[0] if args else str
 
+    resolved_item_type, _ = _resolve_type(item_type)
+
     # Check if item_type is a Pydantic Model
-    if isinstance(item_type, type) and issubclass(item_type, BaseModel):
-        return _render_model_list(ctx, item_type)
+    if isinstance(resolved_item_type, type) and issubclass(resolved_item_type, BaseModel):
+        return _render_model_list(ctx, resolved_item_type)
+
+    # Check for Enum or Literal -> Multiselect
+    is_enum = isinstance(resolved_item_type, type) and issubclass(resolved_item_type, Enum)
+    is_literal = get_origin(resolved_item_type) is Literal
+
+    if is_enum or is_literal:
+        return _render_multiselect(ctx, resolved_item_type)
 
     return _render_primitive_list(ctx, item_type)
 
