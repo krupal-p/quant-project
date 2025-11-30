@@ -146,7 +146,7 @@ def _get_default_value(ctx: RenderContext, field_type: Any) -> Any:
 
 def render_bool(ctx: RenderContext, _: Any) -> bool:
     default = _get_default_value(ctx, bool)
-    return st.toggle(
+    return st.checkbox(
         ctx.label,
         value=bool(default),
         key=ctx.key,
@@ -349,7 +349,7 @@ def _render_primitive_list(ctx: RenderContext, item_type: Any) -> list[Any]:
     item_ids = list_state["ids"]
     initial_values = list_state["values"]
 
-    if st.button("Add Item", key=f"{ctx.key}_add"):
+    if st.button(f"{ctx.label}", key=f"{ctx.key}_add"):
         new_id = str(uuid.uuid4())
         list_state["ids"].append(new_id)
 
