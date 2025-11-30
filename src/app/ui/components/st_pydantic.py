@@ -525,36 +525,37 @@ def render_union(ctx: RenderContext, type_: Any) -> Any:
         type_map[label] = arg
 
     type_labels = list(type_map.keys())
-    selector_key = f"{ctx.key}_type_selector"
 
-    # Determine current type index
-    current_type_idx = 0
+    meta = st.session_state[ctx.form_key].setdefault("meta", {})
 
-    # Priority: Widget State > Data Inference
-    if selector_key in st.session_state and st.session_state[selector_key] in type_labels:
-        current_type_idx = type_labels.index(st.session_state[selector_key])
-    elif ctx.current_value is not None:
-        for i, (_, t) in enumerate(type_map.items()):
-            # Check for Pydantic models
-            if isinstance(t, type) and issubclass(t, BaseModel):
-                if isinstance(ctx.current_value, (dict, t)):
-                    current_type_idx = i
+    if ctx.key not in meta:
+        inferred_idx = 0
+        if ctx.current_value is not None:
+            for i, (_, t) in enumerate(type_map.items()):
+                # Check for Pydantic models
+                if isinstance(t, type) and issubclass(t, BaseModel):
+                    if isinstance(ctx.current_value, (dict, t)):
+                        inferred_idx = i
+                        break
+                # Check for primitives
+                elif isinstance(t, type) and isinstance(ctx.current_value, t):
+                    inferred_idx = i
                     break
-            # Check for primitives
-            elif isinstance(t, type) and isinstance(ctx.current_value, t):
-                current_type_idx = i
-                break
+        meta[ctx.key] = type_labels[inferred_idx]
+
+    selector_key = f"{ctx.key}_type_selector"
 
     selected_label = st.segmented_control(
         f"Type for {ctx.label}",
         options=type_labels,
-        default=type_labels[current_type_idx],
         key=selector_key,
         help=f"Select type for {ctx.label}",
     )
 
     if selected_label is None:
-        selected_label = type_labels[current_type_idx]
+        selected_label = meta[ctx.key]
+    else:
+        meta[ctx.key] = selected_label
 
     selected_type = type_map[selected_label]
 
