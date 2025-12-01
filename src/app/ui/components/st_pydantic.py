@@ -17,7 +17,6 @@ from typing import (
     get_origin,
 )
 
-import orjson
 import streamlit as st
 from pydantic import AnyUrl, BaseModel, EmailStr, SecretStr, TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
@@ -410,7 +409,7 @@ def render_datetime(ctx: RenderContext, type_: Any) -> datetime | date | time | 
 
 
 @register(is_timedelta)
-def render_timedelta(ctx: RenderContext, type_: Any) -> timedelta | None:
+def render_timedelta(ctx: RenderContext, type_: Any) -> Any:
     default = get_default_value(ctx, type_)
     default_str = str(default) if default is not None else ""
 
@@ -418,19 +417,15 @@ def render_timedelta(ctx: RenderContext, type_: Any) -> timedelta | None:
         ctx.label,
         value=default_str,
         key=ctx.key,
-        help=ctx.description or "Enter duration (e.g. '1d', '2 hours', 'P1DT2H')",
-        placeholder="1d 2h 30m",
+        help=ctx.description or "Enter duration in seconds (e.g., 3600) or ISO 8601 format (e.g., P1DT2H30M)",
     )
-
-    if not val:
-        return None
-
-    try:
-        ta = TypeAdapter(timedelta)
-        return ta.validate_python(val)
-    except ValidationError:
-        st.error(f"Invalid duration format: {val}")
-        return None
+    if val:
+        try:
+            return timedelta(seconds=int(val))
+        except ValueError:
+            pass
+        return val
+    return None
 
 
 @register(is_list_origin)
@@ -876,8 +871,7 @@ def render_pydantic_form[T: BaseModel](
         except ValidationError as e:
             st.error("Please correct the errors below:")
             for error in e.errors():
-                fmt_str = orjson.dumps(error, option=orjson.OPT_INDENT_2).decode
-                st.error(f"```json\n{fmt_str}\n```", icon="🚨")
+                st.error(error, icon="🚨")
             return None
         else:
             st.success("Validation Successful!")
