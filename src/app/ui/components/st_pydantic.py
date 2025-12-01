@@ -409,7 +409,7 @@ def render_datetime(ctx: RenderContext, type_: Any) -> datetime | date | time | 
 
 
 @register(is_timedelta)
-def render_timedelta(ctx: RenderContext, type_: Any) -> Any:
+def render_timedelta(ctx: RenderContext, type_: Any) -> timedelta | str | None:
     default = get_default_value(ctx, type_)
     default_str = str(default) if default is not None else ""
 
