@@ -26,8 +26,6 @@ T = TypeVar("T", bound=BaseModel)
 
 
 # --- Core Context & Types ---
-
-
 @dataclass(frozen=True)
 class RenderContext:
     """Immutable context object passed to all renderers."""
@@ -68,7 +66,6 @@ class RenderContext:
 Renderer = Callable[[RenderContext, Any], Any]
 Predicate = Callable[[Any], bool]
 
-
 # --- Registry System ---
 
 _RENDERER_REGISTRY: list[tuple[Predicate, Renderer]] = []
@@ -79,8 +76,8 @@ def register(predicate: Predicate) -> Callable[[Renderer], Renderer]:
 
     @wraps(predicate)
     def decorator(renderer: Renderer) -> Renderer:
-        # Insert at the beginning to allow overriding (LIFO)
-        _RENDERER_REGISTRY.insert(0, (predicate, renderer))
+        # Append to the end (FIFO)
+        _RENDERER_REGISTRY.append((predicate, renderer))
         return renderer
 
     return decorator
@@ -223,6 +220,43 @@ def remove_collection_item(form_key: str, field_key: str, item_id: str) -> None:
 # --- Predicates ---
 
 
+def is_none_type(t: Any) -> bool:
+    return t is None or t is type(None)
+
+
+def is_union(t: Any) -> bool:
+    origin = get_origin(t)
+    return origin is Union or (hasattr(types, "UnionType") and origin is types.UnionType)
+
+
+def is_pydantic_model(t: Any) -> bool:
+    return isinstance(t, type) and issubclass(t, BaseModel)
+
+
+def is_dict_origin(t: Any) -> bool:
+    return get_origin(t) is dict or t is dict
+
+
+def is_list_origin(t: Any) -> bool:
+    return get_origin(t) in (list, set, tuple)
+
+
+def is_timedelta(t: Any) -> bool:
+    return t is timedelta
+
+
+def is_datetime_type(t: Any) -> bool:
+    return t in (datetime, date, time)
+
+
+def is_literal(t: Any) -> bool:
+    return get_origin(t) is Literal
+
+
+def is_enum(t: Any) -> bool:
+    return isinstance(t, type) and issubclass(t, Enum)
+
+
 def is_numeric(t: Any) -> bool:
     return t in (int, float, Decimal)
 
@@ -231,45 +265,8 @@ def is_string_like(t: Any) -> bool:
     return t in (str, EmailStr, AnyUrl, SecretStr)
 
 
-def is_enum(t: Any) -> bool:
-    return isinstance(t, type) and issubclass(t, Enum)
-
-
-def is_literal(t: Any) -> bool:
-    return get_origin(t) is Literal
-
-
-def is_datetime_type(t: Any) -> bool:
-    return t in (datetime, date, time)
-
-
-def is_timedelta(t: Any) -> bool:
-    return t is timedelta
-
-
 def is_bool(t: Any) -> bool:
     return t is bool
-
-
-def is_list_origin(t: Any) -> bool:
-    return get_origin(t) in (list, set, tuple)
-
-
-def is_dict_origin(t: Any) -> bool:
-    return get_origin(t) is dict or t is dict
-
-
-def is_pydantic_model(t: Any) -> bool:
-    return isinstance(t, type) and issubclass(t, BaseModel)
-
-
-def is_union(t: Any) -> bool:
-    origin = get_origin(t)
-    return origin is Union or (hasattr(types, "UnionType") and origin is types.UnionType)
-
-
-def is_none_type(t: Any) -> bool:
-    return t is None or t is type(None)
 
 
 # --- Renderers ---
