@@ -7,3 +7,6 @@ extra_loggers = "app"
 
 [server]
 analytics_enabled = false
+
+[server.ui]
+show_promotional_content = false
