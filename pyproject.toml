@@ -26,6 +26,8 @@ dependencies = [
     "sqlalchemy>=2.0.41",
     "streamlit>=1.45.1",
     "yfinance>=0.2.61",
+    "authlib>=1.6.9",
+    "apache-airflow>=3.2.0",
 ]
 
 [dependency-groups]
