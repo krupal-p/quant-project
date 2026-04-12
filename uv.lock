@@ -4059,7 +4059,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=6.1.1" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "ruff", specifier = ">=0.12.5" },
-    { name = "ty", specifier = ">=0.0.1a27" },
+    { name = "ty", specifier = ">=0.0.29" },
     { name = "watchdog", specifier = ">=6.0.0" },
 ]
 
