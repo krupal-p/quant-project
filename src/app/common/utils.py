@@ -8,9 +8,7 @@ from app import log
 
 def to_snake_case(value: str) -> str:
     # Normalize unicode to ASCII
-    value = (
-        unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
-    )
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
 
     # Replace all non-alphanumeric characters with space
     value = re.sub(r"[^\w]", " ", value)

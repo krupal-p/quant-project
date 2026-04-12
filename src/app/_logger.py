@@ -31,9 +31,7 @@ def setup_logging():
             "disable_existing_loggers": False,
             "formatters": {
                 "simple": {
-                    "format": (
-                        "[%(asctime)s] [%(levelname)s] [%(name)s] [%(process)d] [%(module)s] %(message)s"
-                    ),
+                    "format": ("[%(asctime)s] [%(levelname)s] [%(name)s] [%(process)d] [%(module)s] %(message)s"),
                 },
             },
             "handlers": {
