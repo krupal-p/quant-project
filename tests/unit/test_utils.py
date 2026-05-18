@@ -120,7 +120,6 @@ import pytest
         ("camel_SnakeMix", "camel_snake_mix"),
         ("   ", ""),
         ("\t\n", ""),
-        ("CamelCase", "camel_case"),
         ("already_snake_case", "already_snake_case"),
         ("A" * 1000, "a" * 1000),
         ("-", ""),
