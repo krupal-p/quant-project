@@ -6,33 +6,20 @@ from functools import wraps
 from app import log
 
 
-def to_snake_case(value: str) -> str:
-    # Normalize unicode to ASCII
-    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
-
-    # Replace all non-alphanumeric characters with space
-    value = re.sub(r"[^\w]", " ", value)
-
-    # Handle acronym followed by normal word (e.g., 'XMLHttp' -> 'XML Http')
-    value = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", value)
-
-    # Handle lowercase/digit followed by uppercase (e.g., 'fooBar' -> 'foo Bar')
-    value = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", value)
-
-    # Handle letter followed by digit or digit followed by letter (e.g., 'foo123Bar' -> 'foo 123 Bar')
-    value = re.sub(r"(?<=[A-Za-z])(?=[0-9])", " ", value)
-    value = re.sub(r"(?<=[0-9])(?=[A-Za-z])", " ", value)
-
-    # Replace underscores with space for normalization
-    value = re.sub(r"_+", " ", value)
-
-    # Normalize multiple spaces
-    value = re.sub(r"\s+", " ", value).strip()
-
-    # Split and lowercase
-    parts: list[str] = value.lower().split()
-
-    return "_".join(parts)
+def to_snake_case(s: str) -> str:
+    """Convert any string to snake_case."""
+    if not s:
+        return ""
+    # Normalize unicode to ASCII where possible
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    # Put underscore between lower->Upper (e.g., "fooBar" -> "foo_Bar")
+    s = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", s)
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s)
+    # Replace any non-alphanumeric characters with underscores
+    s = re.sub(r"[^0-9a-zA-Z]+", "_", s)
+    # Collapse multiple underscores, strip edges, lowercase
+    s = re.sub(r"_+", "_", s).strip("_").lower()
+    return s
 
 
 def timeit(func):
