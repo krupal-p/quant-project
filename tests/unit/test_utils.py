@@ -1,71 +1,140 @@
-def test_to_snake_case() -> None:
+import pytest
+
+
+@pytest.mark.parametrize(
+    argnames=("input_str", "expected"),
+    argvalues=[
+        ("string_with_underscores", "string_with_underscores"),
+        ("CamelCase", "camel_case"),
+        ("PascalCase", "pascal_case"),
+        ("mixedCaseString", "mixed_case_string"),
+        ("XMLHttpRequest", "xml_http_request"),
+        ("HTMLParser", "html_parser"),
+        ("string with spaces", "string_with_spaces"),
+        ("multiple   spaces   between", "multiple_spaces_between"),
+        (" leading space", "leading_space"),
+        ("trailing space ", "trailing_space"),
+        ("  multiple  leading  trailing  ", "multiple_leading_trailing"),
+        ("string-with-hyphens", "string_with_hyphens"),
+        ("multiple---hyphens", "multiple_hyphens"),
+        ("-leading-hyphen", "leading_hyphen"),
+        ("trailing-hyphen-", "trailing_hyphen"),
+        ("mixed-case with_spaces", "mixed_case_with_spaces"),
+        ("CamelCase-with-hyphens", "camel_case_with_hyphens"),
+        ("snake_case_already", "snake_case_already"),
+        ("stringWith123Numbers", "string_with123_numbers"),
+        ("number123InMiddle", "number123_in_middle"),
+        ("123StartingNumber", "123_starting_number"),
+        ("endingNumber123", "ending_number123"),
+        ("Version2Point0", "version2_point0"),
+        ("HTML5Parser", "html5_parser"),
+        ("alllowercase", "alllowercase"),
+        ("ALLUPPERCASE", "alluppercase"),
+        ("MixedCASEString", "mixed_case_string"),
+        ("string_with_special_characters!@#$%^&*(", "string_with_special_characters"),
+        ("!Special@Characters#", "special_characters"),
+        ("email@domain.com", "email_domain_com"),
+        ("path/to/file.txt", "path_to_file_txt"),
+        ("key:value;pair", "key_value_pair"),
+        ("string__with__consecutive__underscores", "string_with_consecutive_underscores"),
+        ("___multiple___leading___trailing___", "multiple_leading_trailing"),
+        ("", ""),
+        ("a", "a"),
+        ("A", "a"),
+        ("1", "1"),
+        ("_", ""),
+        ("___", ""),
+        ("!@#$%^&*(", ""),
+        ("HTTPSConnection", "https_connection"),
+        ("URLParser", "url_parser"),
+        ("JSONData", "json_data"),
+        ("XMLToHTML", "xml_to_html"),
+        ("PDFToWordConverter", "pdf_to_word_converter"),
+        ("firstName", "first_name"),
+        ("lastName", "last_name"),
+        ("emailAddress", "email_address"),
+        ("phoneNumber", "phone_number"),
+        ("dateOfBirth", "date_of_birth"),
+        ("createdAt", "created_at"),
+        ("updatedAt", "updated_at"),
+        ("userId", "user_id"),
+        ("companyName", "company_name"),
+        ("isActive", "is_active"),
+        ("ex-date", "ex_date"),
+        ("RatecodeID", "ratecode_id"),
+        ("CustomerID", "customer_id"),
+        ("OrderDate", "order_date"),
+        ("UnitPrice", "unit_price"),
+        ("trailing Annual DividendRate", "trailing_annual_dividend_rate"),
+        ("Mixed_Characters-123", "mixed_characters_123"),
+        ("APIKey2024Version", "api_key2024_version"),
+        ("OAuth2TokenExpiry", "o_auth2_token_expiry"),
+        ("café", "cafe"),
+        ("naïve", "naive"),
+        ("résumé", "resume"),
+        ("hello\tworld", "hello_world"),
+        ("hello\nworld", "hello_world"),
+        ("hello\r\nworld", "hello_world"),
+        ("hello\fworld", "hello_world"),
+        ("hello\vworld", "hello_world"),
+        ("hello \t \n world", "hello_world"),
+        ("hello\u00a0world", "hello_world"),
+        ("hello\u2003world", "hello_world"),
+        ("hello😀world", "hello_world"),
+        ("😀SmileTest😀", "smile_test"),
+        ("user🚀id", "user_id"),
+        ("SãoPaulo", "sao_paulo"),
+        ("München", "munchen"),
+        ("CrèmeBrûlée", "creme_brulee"),
+        ("Łódź", "lodz"),
+        ("cafe\u0301", "cafe"),
+        ("東京", ""),
+        ("ПриветМир", ""),
+        ("مرحبا", ""),
+        ("HTTPRequest", "http_request"),
+        ("HTTPResponseCode", "http_response_code"),
+        ("XMLHTTPAPI", "xmlhttpapi"),
+        ("MyURLParser", "my_url_parser"),
+        ("SSLError", "ssl_error"),
+        ("JSONXMLParser", "jsonxml_parser"),
+        ("ABCDef", "abc_def"),
+        ("ABc", "a_bc"),
+        ("123ABC", "123_abc"),
+        ("ABC123", "abc123"),
+        ("ABC123XYZ", "abc123_xyz"),
+        ("1A2B3C", "1_a2_b3_c"),
+        ("Version1.2.3", "version1_2_3"),
+        ("v2.0API", "v2_0_api"),
+        ("__init__", "init"),
+        ("_privateVar", "private_var"),
+        ("__privateVar__", "private_var"),
+        ("a-b_c d", "a_b_c_d"),
+        ("a---b___c   d", "a_b_c_d"),
+        ("hello!!!world", "hello_world"),
+        ("user@@@domain###com", "user_domain_com"),
+        ("../path/to/file", "path_to_file"),
+        ("C:\\Program Files\\App", "c_program_files_app"),
+        ("https://example.com/api/v1", "https_example_com_api_v1"),
+        ("userID2", "user_id2"),
+        ("snake_CASE_Mixed", "snake_case_mixed"),
+        ("camel_SnakeMix", "camel_snake_mix"),
+        ("   ", ""),
+        ("\t\n", ""),
+        ("CamelCase", "camel_case"),
+        ("already_snake_case", "already_snake_case"),
+        ("A" * 1000, "a" * 1000),
+        ("-", ""),
+        (" ", ""),
+        (".", ""),
+        ("99Bottles", "99_bottles"),
+        ("Bottles99", "bottles99"),
+        ("aTest", "a_test"),
+        ("TestA", "test_a"),
+        ("hello.world:test", "hello_world_test"),
+        ("a__b--c  d", "a_b_c_d"),
+    ],
+)
+def test_to_snake_case(input_str, expected) -> None:
     from app.common.utils import to_snake_case
 
-    assert to_snake_case("string_with_underscores") == "string_with_underscores"
-    assert to_snake_case("CamelCase") == "camel_case"
-    assert to_snake_case("PascalCase") == "pascal_case"
-    assert to_snake_case("mixedCaseString") == "mixed_case_string"
-    assert to_snake_case("XMLHttpRequest") == "xml_http_request"
-    assert to_snake_case("HTMLParser") == "html_parser"
-    assert to_snake_case("string with spaces") == "string_with_spaces"
-    assert to_snake_case("multiple   spaces   between") == "multiple_spaces_between"
-    assert to_snake_case(" leading space") == "leading_space"
-    assert to_snake_case("trailing space ") == "trailing_space"
-    assert to_snake_case("  multiple  leading  trailing  ") == "multiple_leading_trailing"
-    assert to_snake_case("string-with-hyphens") == "string_with_hyphens"
-    assert to_snake_case("multiple---hyphens") == "multiple_hyphens"
-    assert to_snake_case("-leading-hyphen") == "leading_hyphen"
-    assert to_snake_case("trailing-hyphen-") == "trailing_hyphen"
-    assert to_snake_case("mixed-case with_spaces") == "mixed_case_with_spaces"
-    assert to_snake_case("CamelCase-with-hyphens") == "camel_case_with_hyphens"
-    assert to_snake_case("snake_case_already") == "snake_case_already"
-    assert to_snake_case("stringWith123Numbers") == "string_with123_numbers"
-    assert to_snake_case("number123InMiddle") == "number123_in_middle"
-    assert to_snake_case("123StartingNumber") == "123_starting_number"
-    assert to_snake_case("endingNumber123") == "ending_number123"
-    assert to_snake_case("Version2Point0") == "version2_point0"
-    assert to_snake_case("HTML5Parser") == "html5_parser"
-    assert to_snake_case("alllowercase") == "alllowercase"
-    assert to_snake_case("ALLUPPERCASE") == "alluppercase"
-    assert to_snake_case("MixedCASEString") == "mixed_case_string"
-    assert to_snake_case("string_with_special_characters!@#$%^&*(") == "string_with_special_characters"
-    assert to_snake_case("!Special@Characters#") == "special_characters"
-    assert to_snake_case("email@domain.com") == "email_domain_com"
-    assert to_snake_case("path/to/file.txt") == "path_to_file_txt"
-    assert to_snake_case("key:value;pair") == "key_value_pair"
-    assert to_snake_case("string__with__consecutive__underscores") == "string_with_consecutive_underscores"
-    assert to_snake_case("___multiple___leading___trailing___") == "multiple_leading_trailing"
-    assert to_snake_case("") == ""
-    assert to_snake_case("a") == "a"
-    assert to_snake_case("A") == "a"
-    assert to_snake_case("1") == "1"
-    assert to_snake_case("_") == ""
-    assert to_snake_case("___") == ""
-    assert to_snake_case("!@#$%^&*(") == ""
-    assert to_snake_case("HTTPSConnection") == "https_connection"
-    assert to_snake_case("URLParser") == "url_parser"
-    assert to_snake_case("JSONData") == "json_data"
-    assert to_snake_case("XMLToHTML") == "xml_to_html"
-    assert to_snake_case("PDFToWordConverter") == "pdf_to_word_converter"
-    assert to_snake_case("firstName") == "first_name"
-    assert to_snake_case("lastName") == "last_name"
-    assert to_snake_case("emailAddress") == "email_address"
-    assert to_snake_case("phoneNumber") == "phone_number"
-    assert to_snake_case("dateOfBirth") == "date_of_birth"
-    assert to_snake_case("createdAt") == "created_at"
-    assert to_snake_case("updatedAt") == "updated_at"
-    assert to_snake_case("userId") == "user_id"
-    assert to_snake_case("companyName") == "company_name"
-    assert to_snake_case("isActive") == "is_active"
-    assert to_snake_case("ex-date") == "ex_date"
-    assert to_snake_case("RatecodeID") == "ratecode_id"
-    assert to_snake_case("CustomerID") == "customer_id"
-    assert to_snake_case("OrderDate") == "order_date"
-    assert to_snake_case("UnitPrice") == "unit_price"
-    assert to_snake_case("trailing Annual DividendRate") == "trailing_annual_dividend_rate"
-    assert to_snake_case("Mixed_Characters-123") == "mixed_characters_123"
-    assert to_snake_case("APIKey2024Version") == "api_key2024_version"
-    assert to_snake_case("OAuth2TokenExpiry") == "o_auth2_token_expiry"
-    assert to_snake_case("café") == "cafe"
-    assert to_snake_case("naïve") == "naive"
-    assert to_snake_case("résumé") == "resume"
+    assert to_snake_case(input_str) == expected

@@ -6,20 +6,15 @@ from functools import wraps
 from app import log
 
 
-def to_snake_case(s: str) -> str:
-    """Convert any string to snake_case."""
-    if not s:
+def to_snake_case(value: str) -> str:
+    if not value:
         return ""
-    # Normalize unicode to ASCII where possible
-    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
-    # Put underscore between lower->Upper (e.g., "fooBar" -> "foo_Bar")
-    s = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", s)
-    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s)
-    # Replace any non-alphanumeric characters with underscores
-    s = re.sub(r"[^0-9a-zA-Z]+", "_", s)
-    # Collapse multiple underscores, strip edges, lowercase
-    s = re.sub(r"_+", "_", s).strip("_").lower()
-    return s
+    value = "".join(c if unicodedata.category(c)[0] in "LN" else " " for c in value)
+    value = unicodedata.normalize("NFKD", value.replace("Ł", "L").replace("ł", "l")).encode("ascii", "ignore").decode()
+    value = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", value)
+    value = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", value)
+    value = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", value)
+    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
 
 
 def timeit(func):
